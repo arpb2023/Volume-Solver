@@ -105,18 +105,17 @@ canvas.dragging{cursor:grabbing}
       <h2>2 · Grids</h2>
       <label class="f">Computation grid — sets the volume</label>
       <select id="fine">
-        <option value="0.25">0.25 m — most exact</option>
-        <option value="0.5">0.5 m</option>
-        <option value="1" selected>1 m</option>
-        <option value="2">2 m</option>
-        <option value="5">5 m — quick look</option>
+        <option value="0.1">0.10 m</option>
+        <option value="0.25" selected>0.25 m</option>
+        <option value="0.5">0.50 m</option>
+        <option value="1">1.00 m</option>
       </select>
       <label class="f">Display grid — sets the colour map</label>
       <select id="coarse">
-        <option value="0.25">0.25 m</option>
-        <option value="0.5">0.5 m</option>
-        <option value="1" selected>1 m</option>
-        <option value="2">2 m</option>
+        <option value="0.1">0.10 m</option>
+        <option value="0.25" selected>0.25 m</option>
+        <option value="0.5">0.50 m</option>
+        <option value="1">1.00 m</option>
       </select>
       <p class="hint">The volume always comes from the fine grid, so the map can stay readable without blunting the number.</p>
     </div>
@@ -144,7 +143,35 @@ canvas.dragging{cursor:grabbing}
     </div>
 
     <div class="card">
-      <h2>5 · View</h2>
+      <h2>5 · Regions</h2>
+      <div class="row">
+        <button id="rDraw">Draw region</button>
+        <button id="rImport">Import DXF</button>
+      </div>
+      <input type="file" id="rFile" accept=".dxf" class="hide">
+      <div id="rlist" style="margin-top:7px"></div>
+      <p class="hint">Draw a closed polyline on the difference map: click each corner, Enter to close it, Esc to abandon. Or bring your outlines in from a DXF.</p>
+    </div>
+
+    <div class="card">
+      <h2>6 · Export</h2>
+      <label class="f">Colour cell size</label>
+      <select id="exCell">
+        <option value="0.5">0.50 m</option><option value="1" selected>1.00 m</option>
+        <option value="2">2.00 m</option><option value="5">5.00 m</option>
+      </select>
+      <label class="f">Difference label spacing</label>
+      <select id="exLbl">
+        <option value="5">5 m</option><option value="10" selected>10 m</option>
+        <option value="20">20 m</option><option value="25">25 m</option>
+      </select>
+      <button class="wide" id="exDXF">Export DXF — colours, table, labels</button>
+      <button class="wide" id="exXML">Export difference as LandXML surface</button>
+      <p class="hint">The DXF carries the coloured grid, the band table as a legend, difference labels on their own grid, and any regions — each on its own layer.</p>
+    </div>
+
+    <div class="card">
+      <h2>7 · View</h2>
       <label class="chk"><input type="checkbox" id="wire">Wireframe</label>
       <label class="chk"><input type="checkbox" id="shade" checked>Shading</label>
       <label class="f">Vertical exaggeration</label>
@@ -237,6 +264,31 @@ const TR={
 "elevation":["cotas","altitudes","cotas"],
 "Bands fitted to the data: ":["Faixas ajustadas aos dados: ","Plages ajustées aux données : ","Franjas ajustadas a los datos: "],
 " m to ":[" m a "," m à "," m a "],
+"5 · Regions":["5 · Regiões","5 · Régions","5 · Regiones"],
+"6 · Export":["6 · Exportar","6 · Exportation","6 · Exportar"],
+"7 · View":["7 · Vista","7 · Vue","7 · Vista"],
+"Draw region":["Desenhar região","Tracer une région","Dibujar región"],
+"Import DXF":["Importar DXF","Importer DXF","Importar DXF"],
+"Draw a closed polyline on the difference map: click each corner, Enter to close it, Esc to abandon. Or bring your outlines in from a DXF.":["Desenhe uma polilinha fechada no mapa de diferenças: clique em cada canto, Enter para fechar, Esc para abandonar. Ou traga os seus contornos de um DXF.","Tracez une polyligne fermée sur la carte des différences : cliquez chaque sommet, Entrée pour fermer, Échap pour abandonner. Ou importez vos contours depuis un DXF.","Dibuje una polilínea cerrada en el mapa de diferencias: haga clic en cada esquina, Intro para cerrarla, Esc para abandonar. O traiga sus contornos desde un DXF."],
+"Colour cell size":["Tamanho da célula de cor","Taille de cellule couleur","Tamaño de celda de color"],
+"Difference label spacing":["Espaçamento das etiquetas","Espacement des étiquettes","Espaciado de etiquetas"],
+"Export DXF — colours, table, labels":["Exportar DXF — cores, tabela, etiquetas","Exporter DXF — couleurs, tableau, étiquettes","Exportar DXF — colores, tabla, etiquetas"],
+"Export difference as LandXML surface":["Exportar diferença como superfície LandXML","Exporter la différence en surface LandXML","Exportar diferencia como superficie LandXML"],
+"The DXF carries the coloured grid, the band table as a legend, difference labels on their own grid, and any regions — each on its own layer.":["O DXF leva a grelha colorida, a tabela de faixas como legenda, etiquetas de diferença na sua própria grelha e as regiões — cada uma na sua camada.","Le DXF contient la grille colorée, le tableau des plages en légende, les étiquettes de différence sur leur propre grille et les régions — chacune sur son calque.","El DXF lleva la malla coloreada, la tabla de franjas como leyenda, etiquetas de diferencia en su propia malla y las regiones — cada una en su capa."],
+"Click each corner of the region, Enter to close it, Esc to abandon":["Clique em cada canto da região, Enter para fechar, Esc para abandonar","Cliquez chaque sommet de la région, Entrée pour fermer, Échap pour abandonner","Haga clic en cada esquina de la región, Intro para cerrarla, Esc para abandonar"],
+"Region abandoned":["Região abandonada","Région abandonnée","Región abandonada"],
+"No closed polylines found in that DXF":["Nenhuma polilinha fechada encontrada nesse DXF","Aucune polyligne fermée trouvée dans ce DXF","No se encontraron polilíneas cerradas en ese DXF"],
+"Nothing to export":["Nada para exportar","Rien à exporter","Nada que exportar"],
+"DXF written — ":["DXF exportado — ","DXF exporté — ","DXF exportado — "],
+"LandXML written — ":["LandXML exportado — ","LandXML exporté — ","LandXML exportado — "],
+" coloured cells, ":[" células coloridas, "," cellules colorées, "," celdas coloreadas, "],
+" labels, ":[" etiquetas, "," étiquettes, "," etiquetas, "],
+" bands, ":[" faixas, "," plages, "," franjas, "],
+" regions":[" regiões"," régions"," regiones"],
+" region(s) imported from DXF":[" região(ões) importada(s) do DXF"," région(s) importée(s) du DXF"," región(es) importada(s) del DXF"],
+" triangles of difference":[" triângulos de diferença"," triangles de différence"," triángulos de diferencia"],
+"Site is large — grid eased to ":["Terreno grande — grelha alargada para ","Site étendu — grille élargie à ","Terreno grande — malla ampliada a "],
+" to stay within memory":[" para não exceder a memória"," pour rester dans la mémoire"," para no exceder la memoria"],
 "Visible":["Visível","Visible","Visible"],
 "surface":["superfície","surface","superficie"],
 "surfaces":["superfícies","surfaces","superficies"],
@@ -277,7 +329,7 @@ function applyLang(code){
   }
   document.documentElement.lang=LANG==='pt'?'pt-PT':LANG;
   try{localStorage.setItem('surfsolver-lang',LANG)}catch(e){}
-  drawSurfList();drawBands();showVol();
+  drawSurfList();drawBands();showVol();drawRegionList();
 }
 let LASTMSG='';
 const msg=(t,warn)=>{LASTMSG=t;const m=$('msg');m.textContent=T(t);m.className=warn?'msg warn':'msg';};
@@ -293,8 +345,9 @@ const S={
   v2:{s:1,ox:0,oy:0},
   grids:null,        // {fine:{...}, coarse:{...}}
   vol:null,
+  fitted:false,
   bands:[
-    {min:-1e9,max:-2,col:'#7f1d1d'},
+    {min:-3,max:-2,col:'#7f1d1d'},
     {min:-2,max:-1,col:'#b91c1c'},
     {min:-1,max:-0.5,col:'#ef4444'},
     {min:-0.5,max:-0.1,col:'#fb923c'},
@@ -302,7 +355,7 @@ const S={
     {min:0.1,max:0.5,col:'#7dd3fc'},
     {min:0.5,max:1,col:'#38bdf8'},
     {min:1,max:2,col:'#2563eb'},
-    {min:2,max:1e9,col:'#1e3a8a'},
+    {min:2,max:3,col:'#1e3a8a'},
   ],
 };
 const PALETTE=['#f2b01e','#4aa3ff','#7dd3fc','#b98cff','#6fd08c','#f08a70'];
@@ -368,6 +421,13 @@ function parseLandXML(text,fname){
 /* ─────────────── rasterise a TIN onto a grid ───────────────
    Walks each triangle once and fills the cells it covers, so the cost
    follows the area covered rather than the grid size.                 */
+const MAXCELLS=12e6;
+/** keep the grid inside a sane memory budget, coarsening if the site is huge */
+function safeCell(bb,cell){
+  let c=cell;
+  while(Math.ceil((bb.x1-bb.x0)/c)*Math.ceil((bb.y1-bb.y0)/c)>MAXCELLS)c*=2;
+  return c;
+}
 function makeGrid(bb,cell){
   const x0=Math.floor(bb.x0/cell)*cell, y0=Math.floor(bb.y0/cell)*cell;
   const nx=Math.max(1,Math.ceil((bb.x1-x0)/cell));
@@ -427,19 +487,25 @@ function recompute(){
   const bb=commonBB(A,B);
   if(!bb){msg('The two surfaces do not overlap — check they share a coordinate system',true);showVol();draw();return;}
   const t0=performance.now();
-  const gf=makeGrid(bb,S.fine), gc=makeGrid(bb,S.coarse);
+  const cf=safeCell(bb,S.fine), cc=safeCell(bb,S.coarse);
+  if(cf!==S.fine||cc!==S.coarse)msg('Site is large — grid eased to '+cf+' m to stay within memory',true);
+  const gf=makeGrid(bb,cf), gc=makeGrid(bb,cc);
   const fa=rasterise(A,gf), fb=rasterise(B,gf);
   const ca=rasterise(A,gc), cb=rasterise(B,gc);
   S.grids={fine:{g:gf,a:fa,b:fb},coarse:{g:gc,a:ca,b:cb}};
   S.vol=volumeOn(gf,fa,fb,A.off,B.off);
+  if(!S.fitted){S.fitted=true;fitBands(true);}
   S.volCoarse=volumeOn(gc,ca,cb,A.off,B.off);
-  S.ms=Math.round(performance.now()-t0);
-  showVol();drawBands();draw();
+  S.ms=Math.round(performance.now()-t0);DIFFDIRTY=true;
+  showVol();drawBands();recomputeRegions();draw();
 }
 
 /* ─────────────── colour bands ─────────────── */
 function bandOf(d){
-  for(let i=0;i<S.bands.length;i++){const b=S.bands[i];if(d>=b.min&&d<b.max)return i;}
+  const n=S.bands.length; if(!n)return -1;
+  if(d<S.bands[0].min)return 0;              // tails fall into the end bands, so
+  if(d>=S.bands[n-1].max)return n-1;         // band volumes always add up to the net
+  for(let i=0;i<n;i++){const b=S.bands[i];if(d>=b.min&&d<b.max)return i;}
   return -1;
 }
 function bandVolumes(){
@@ -456,7 +522,7 @@ function bandVolumes(){
   }
   return out;
 }
-function fitBands(){
+function fitBands(quiet){
   if(!S.grids)return;
   const {a,b}=S.grids.fine;
   const oA=S.surfs[S.base].off,oB=S.surfs[S.comp].off;
@@ -472,10 +538,10 @@ function fitBands(){
     band.min=+(lo+i*step).toFixed(3);
     band.max=+(lo+(i+1)*step).toFixed(3);
   });
-  S.bands[0].min=+lo.toFixed(3);                 // locked to the actual minimum
-  S.bands[n-1].max=+(hi+1e-6).toFixed(3);        // and the actual maximum
-  msg('Bands fitted to the data: '+lo.toFixed(2)+' m to '+hi.toFixed(2)+' m');
-  drawBands();draw();
+  S.bands[0].min=+lo.toFixed(2);                 // locked to the actual minimum
+  S.bands[n-1].max=+hi.toFixed(2);               // and the actual maximum
+  if(!quiet)msg('Bands fitted to the data: '+lo.toFixed(2)+' m to '+hi.toFixed(2)+' m');
+  DIFFDIRTY=true;drawBands();draw();
 }
 
 /* ───────────────────── panel rendering ───────────────────── */
@@ -523,20 +589,18 @@ function drawBands(){
   const tb=$('bands').querySelector('tbody');tb.innerHTML='';
   S.bands.forEach((b,i)=>{
     const tr=document.createElement('tr');
-    const lo=b.min<=-1e8?'−∞':b.min.toFixed(2);
-    const hi=b.max>=1e8?'+∞':b.max.toFixed(2);
     tr.innerHTML=
       `<td><input type="color" value="${b.col}" data-c="${i}"></td>`+
-      `<td class="num">${b.min<=-1e8?lo:`<input type="number" step="0.1" value="${b.min}" data-mn="${i}" style="width:56px">`}</td>`+
-      `<td class="num">${b.max>=1e8?hi:`<input type="number" step="0.1" value="${b.max}" data-mx="${i}" style="width:56px">`}</td>`+
+      `<td class="num"><input type="number" step="0.05" value="${b.min.toFixed(2)}" data-mn="${i}" style="width:58px"></td>`+
+      `<td class="num"><input type="number" step="0.05" value="${b.max.toFixed(2)}" data-mx="${i}" style="width:58px"></td>`+
       `<td class="num">${S.grids?m3(vols[i]):'—'}</td>`+
       `<td><button class="sm" data-del="${i}" style="padding:1px 5px">×</button></td>`;
     tb.appendChild(tr);
   });
-  tb.querySelectorAll('[data-c]').forEach(c=>c.oninput=()=>{S.bands[+c.dataset.c].col=c.value;draw();});
-  tb.querySelectorAll('[data-mn]').forEach(c=>c.onchange=()=>{S.bands[+c.dataset.mn].min=+c.value;drawBands();draw();});
-  tb.querySelectorAll('[data-mx]').forEach(c=>c.onchange=()=>{S.bands[+c.dataset.mx].max=+c.value;drawBands();draw();});
-  tb.querySelectorAll('[data-del]').forEach(c=>c.onclick=()=>{S.bands.splice(+c.dataset.del,1);drawBands();draw();});
+  tb.querySelectorAll('[data-c]').forEach(c=>c.oninput=()=>{DIFFDIRTY=true;S.bands[+c.dataset.c].col=c.value;draw();});
+  tb.querySelectorAll('[data-mn]').forEach(c=>c.onchange=()=>{DIFFDIRTY=true;S.bands[+c.dataset.mn].min=+c.value;drawBands();draw();});
+  tb.querySelectorAll('[data-mx]').forEach(c=>c.onchange=()=>{DIFFDIRTY=true;S.bands[+c.dataset.mx].max=+c.value;drawBands();draw();});
+  tb.querySelectorAll('[data-del]').forEach(c=>c.onclick=()=>{DIFFDIRTY=true;S.bands.splice(+c.dataset.del,1);drawBands();draw();});
 }
 function showVol(){
   const v=S.vol;
@@ -547,7 +611,7 @@ function showVol(){
   $('varea').textContent=f2(Math.round(v.area))+' m²';
   const c=S.volCoarse;
   const diff=Math.abs(v.net-c.net), rel=Math.abs(v.net)>1?diff/Math.abs(v.net)*100:0;
-  $('conv').textContent=T('at ')+S.fine+' m: '+m3(v.net)+'  ·  '+S.coarse+' m: '+m3(c.net)+
+  $('conv').textContent=T('at ')+S.grids.fine.g.cell+' m: '+m3(v.net)+'  ·  '+S.grids.coarse.g.cell+' m: '+m3(c.net)+
     '  ('+rel.toFixed(1)+'%)  ·  '+S.ms+' ms';
 }
 
@@ -635,22 +699,42 @@ function draw3D(){
   }
   $('read').textContent=tris.length.toLocaleString()+' '+T(' triangles').trim();
 }
-function drawDiff(){
-  if(!S.grids){splash();return;}
+/* The difference map is painted once into an offscreen image (one pixel per
+   grid cell) and then scaled to screen. That keeps a 0.1 m grid instant, where
+   drawing a rectangle per cell would crawl. */
+let DIFFIMG=null, DIFFDIRTY=true;
+function hex2rgb(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+function buildDiffImage(){
+  if(!S.grids){DIFFIMG=null;return;}
   const {g,a,b}=S.grids.coarse;
   const oA=S.surfs[S.base].off,oB=S.surfs[S.comp].off;
-  const s=S.v2.s,ox=S.v2.ox,oy=S.v2.oy;
-  const w=Math.max(1,g.cell*s);
-  for(let j=0;j<g.ny;j++)for(let i=0;i<g.nx;i++){
-    const x=a[j*g.nx+i],y=b[j*g.nx+i];
-    if(x!==x||y!==y)continue;
-    const d=(y+oB)-(x+oA);
-    const bi=bandOf(d);if(bi<0)continue;
-    cx.fillStyle=S.bands[bi].col;
-    const px=g.x0+i*g.cell,py=g.y0+j*g.cell;
-    cx.fillRect(px*s+ox, oy-(py+g.cell)*s, w+0.6, w+0.6);
+  const cols=S.bands.map(x=>hex2rgb(x.col));
+  const off=document.createElement('canvas');off.width=g.nx;off.height=g.ny;
+  const octx=off.getContext('2d');
+  const img=octx.createImageData(g.nx,g.ny);
+  const D=img.data;
+  for(let j=0;j<g.ny;j++){
+    const srow=j*g.nx, drow=(g.ny-1-j)*g.nx;      // flip: grid y up, image y down
+    for(let i=0;i<g.nx;i++){
+      const za=a[srow+i],zb=b[srow+i];
+      if(za!==za||zb!==zb)continue;               // no data → transparent
+      const bi=bandOf((zb+oB)-(za+oA));
+      if(bi<0)continue;
+      const c=cols[bi],k=(drow+i)*4;
+      D[k]=c[0];D[k+1]=c[1];D[k+2]=c[2];D[k+3]=255;
+    }
   }
-  $('read').textContent=S.coarse+' m'+T(' grid')+'  ·  '+g.nx+'×'+g.ny;
+  octx.putImageData(img,0,0);
+  DIFFIMG={cv:off,g};DIFFDIRTY=false;
+}
+function drawDiff(){
+  if(!S.grids){splash();return;}
+  if(DIFFDIRTY||!DIFFIMG)buildDiffImage();
+  if(!DIFFIMG){splash();return;}
+  const {cv:img,g}=DIFFIMG, s=S.v2.s, ox=S.v2.ox, oy=S.v2.oy;
+  cx.imageSmoothingEnabled=false;
+  cx.drawImage(img, g.x0*s+ox, oy-(g.y0+g.ny*g.cell)*s, g.nx*g.cell*s, g.ny*g.cell*s);
+  $('read').textContent=g.cell+' m'+T(' grid')+'  ·  '+g.nx+'×'+g.ny;
 }
 function splash(){
   cx.fillStyle='#5d6773';cx.font='13px system-ui';cx.textAlign='center';
@@ -661,12 +745,17 @@ function splash(){
 function draw(){
   cx.clearRect(0,0,W,H);
   cx.fillStyle='#0c1015';cx.fillRect(0,0,W,H);
-  if(S.mode==='3d')draw3D();else drawDiff();
+  if(S.mode==='3d')draw3D();else{drawDiff();drawRegions();}
 }
 
 /* ───────────────────── interaction ───────────────────── */
 let drag=null;
 cv.addEventListener('pointerdown',e=>{
+  if(S.drawing&&S.mode==='diff'&&e.button===0){
+    S.drawing.push({x:(e.offsetX-S.v2.ox)/S.v2.s, y:(S.v2.oy-e.offsetY)/S.v2.s});
+    if(e.detail>=2)finishRegion(); else draw();
+    return;
+  }
   cv.setPointerCapture(e.pointerId);cv.classList.add('dragging');
   drag={x:e.offsetX,y:e.offsetY,pan:e.button===2||e.shiftKey,cam:{...S.cam},v2:{...S.v2}};
 });
@@ -706,9 +795,9 @@ function hoverDiff(sx,sy){
   const {g,a,b}=S.grids.coarse;
   const x=(sx-S.v2.ox)/S.v2.s, y=(S.v2.oy-sy)/S.v2.s;
   const i=Math.floor((x-g.x0)/g.cell), j=Math.floor((y-g.y0)/g.cell);
-  if(i<0||j<0||i>=g.nx||j>=g.ny){$('read').textContent=S.coarse+' m'+T(' grid');return;}
+  if(i<0||j<0||i>=g.nx||j>=g.ny){$('read').textContent=g.cell+' m'+T(' grid');return;}
   const za=a[j*g.nx+i],zb=b[j*g.nx+i];
-  if(za!==za||zb!==zb){$('read').textContent=S.coarse+' m'+T(' grid');return;}
+  if(za!==za||zb!==zb){$('read').textContent=g.cell+' m'+T(' grid');return;}
   const d=(zb+S.surfs[S.comp].off)-(za+S.surfs[S.base].off);
   $('read').textContent=T('Difference at cursor')+': '+(d>=0?'+':'−')+Math.abs(d).toFixed(2)+' m';
 }
@@ -760,9 +849,9 @@ $('fitview').onclick=fitView;
 $('bAdd').onclick=()=>{
   const last=S.bands[S.bands.length-1];
   S.bands.splice(S.bands.length-1,0,{min:last.min,max:last.min+0.5,col:'#94a3b8'});
-  drawBands();draw();
+  DIFFDIRTY=true;drawBands();draw();
 };
-$('bFit').onclick=fitBands;
+$('bFit').onclick=()=>fitBands(false);
 $('t3d').onclick=()=>{S.mode='3d';$('t3d').classList.add('on');$('tdiff').classList.remove('on');draw();};
 $('tdiff').onclick=()=>{S.mode='diff';$('tdiff').classList.add('on');$('t3d').classList.remove('on');draw();};
 $('balance').onclick=()=>{
@@ -778,6 +867,337 @@ $('balance').onclick=()=>{
       (Math.abs(S.vol.net)>1?' — net '+Math.round(S.vol.net)+' m³ left by rounding the offset to 1 mm':''));
 };
 $('lang').onchange=e=>{applyLang(e.target.value);if(LASTMSG)msg(LASTMSG);};
+
+
+/* ══════════════════════════════════════════════════════════════════
+   v2 — regions (drawn or imported) and DXF / LandXML export
+   ══════════════════════════════════════════════════════════════════ */
+S.regions=[];            // {name, pts:[{x,y}], v:{cut,fill,net,area}}
+S.drawing=null;          // vertices being clicked, while drawing
+
+const inPoly=(x,y,P)=>{
+  let inside=false;
+  for(let i=0,j=P.length-1;i<P.length;j=i++){
+    const xi=P[i].x,yi=P[i].y,xj=P[j].x,yj=P[j].y;
+    if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)inside=!inside;
+  }
+  return inside;
+};
+/** volume inside one polygon, measured on the fine grid */
+function regionVolume(P){
+  if(!S.grids||P.length<3)return null;
+  const {g,a,b}=S.grids.fine, A=g.cell*g.cell;
+  const oA=S.surfs[S.base].off,oB=S.surfs[S.comp].off;
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  for(const p of P){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}
+  const i0=Math.max(0,Math.floor((x0-g.x0)/g.cell)), i1=Math.min(g.nx-1,Math.ceil((x1-g.x0)/g.cell));
+  const j0=Math.max(0,Math.floor((y0-g.y0)/g.cell)), j1=Math.min(g.ny-1,Math.ceil((y1-g.y0)/g.cell));
+  let cut=0,fill=0,n=0;
+  for(let j=j0;j<=j1;j++){
+    const y=g.y0+(j+0.5)*g.cell,row=j*g.nx;
+    for(let i=i0;i<=i1;i++){
+      const za=a[row+i],zb=b[row+i];
+      if(za!==za||zb!==zb)continue;
+      if(!inPoly(g.x0+(i+0.5)*g.cell,y,P))continue;
+      const d=(zb+oB)-(za+oA);
+      if(d>0)fill+=d;else cut-=d;
+      n++;
+    }
+  }
+  return {cut:cut*A,fill:fill*A,net:(fill-cut)*A,area:n*A};
+}
+function recomputeRegions(){for(const r of S.regions)r.v=regionVolume(r.pts);drawRegionList();}
+function drawRegionList(){
+  const box=$('rlist');box.innerHTML='';
+  S.regions.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='surf';
+    const v=r.v;
+    d.innerHTML=`<div class="nm"><span class="sw" style="background:#f2b01e"></span>${r.name}
+        <span style="flex:1"></span><button class="sm" data-rdel="${i}" style="padding:1px 6px">×</button></div>`+
+      (v?`<div class="kv"><span class="cut">${T('Cut')}</span><span>${m3(v.cut)}</span></div>
+          <div class="kv"><span class="fill">${T('Fill')}</span><span>${m3(v.fill)}</span></div>
+          <div class="kv"><span>${T('Net')}</span><span>${v.net>=0?'+':'−'}${m3(Math.abs(v.net))}</span></div>
+          <div class="meta">${f2(Math.round(v.area))} m² · ${r.pts.length} pts</div>`
+         :`<div class="meta">—</div>`);
+    box.appendChild(d);
+  });
+  box.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=()=>{
+    S.regions.splice(+b.dataset.rdel,1);drawRegionList();draw();});
+}
+function finishRegion(){
+  if(S.drawing&&S.drawing.length>=3){
+    const r={name:'Region '+(S.regions.length+1),pts:S.drawing.slice()};
+    r.v=regionVolume(r.pts);S.regions.push(r);
+    msg(r.name+': '+(r.v?m3(r.v.net)+' net over '+f2(Math.round(r.v.area))+' m²':'—'));
+    drawRegionList();
+  }
+  S.drawing=null;draw();
+}
+function drawRegions(){
+  if(S.mode!=='diff')return;
+  const s=S.v2.s,ox=S.v2.ox,oy=S.v2.oy;
+  const X=p=>p.x*s+ox, Y=p=>oy-p.y*s;
+  cx.lineWidth=2;
+  for(const r of S.regions){
+    cx.strokeStyle='#ffd166';cx.fillStyle='#ffd16622';
+    cx.beginPath();r.pts.forEach((p,k)=>k?cx.lineTo(X(p),Y(p)):cx.moveTo(X(p),Y(p)));
+    cx.closePath();cx.fill();cx.stroke();
+    const c=r.pts.reduce((a,p)=>({x:a.x+p.x/r.pts.length,y:a.y+p.y/r.pts.length}),{x:0,y:0});
+    cx.fillStyle='#fff3d0';cx.font='12px system-ui';cx.textAlign='center';
+    cx.fillText(r.name,X(c),Y(c));cx.textAlign='left';
+  }
+  if(S.drawing&&S.drawing.length){
+    cx.strokeStyle='#ff9f43';cx.setLineDash([5,4]);
+    cx.beginPath();S.drawing.forEach((p,k)=>k?cx.lineTo(X(p),Y(p)):cx.moveTo(X(p),Y(p)));
+    cx.stroke();cx.setLineDash([]);
+    cx.fillStyle='#ff9f43';
+    for(const p of S.drawing)cx.fillRect(X(p)-3,Y(p)-3,6,6);
+  }
+}
+
+/* ── DXF in: closed polylines become regions ── */
+function readDXF(text){
+  const L=text.split(/\r?\n/);
+  const polys=[];let i=0;
+  while(i<L.length-1){
+    const code=L[i].trim(), val=L[i+1];
+    if(code==='0'&&val.trim()==='LWPOLYLINE'){
+      const pts=[];i+=2;
+      while(i<L.length-1&&L[i].trim()!=='0'){
+        const c=L[i].trim();
+        if(c==='10'){const x=parseFloat(L[i+1]);
+          let y=NaN;for(let k=i+2;k<i+8&&k<L.length-1;k+=2)if(L[k].trim()==='20'){y=parseFloat(L[k+1]);break;}
+          if(isFinite(x)&&isFinite(y))pts.push({x,y});}
+        i+=2;
+      }
+      if(pts.length>=3)polys.push(pts);
+      continue;
+    }
+    if(code==='0'&&val.trim()==='POLYLINE'){
+      const pts=[];i+=2;
+      while(i<L.length-1){
+        if(L[i].trim()==='0'&&L[i+1].trim()==='VERTEX'){
+          let x=NaN,y=NaN;i+=2;
+          while(i<L.length-1&&L[i].trim()!=='0'){
+            if(L[i].trim()==='10')x=parseFloat(L[i+1]);
+            if(L[i].trim()==='20')y=parseFloat(L[i+1]);
+            i+=2;
+          }
+          if(isFinite(x)&&isFinite(y))pts.push({x,y});
+          continue;
+        }
+        if(L[i].trim()==='0'&&L[i+1].trim()==='SEQEND'){i+=2;break;}
+        i+=2;
+      }
+      if(pts.length>=3)polys.push(pts);
+      continue;
+    }
+    i+=2;
+  }
+  return polys;
+}
+
+/* ── DXF out ──────────────────────────────────────────────────────────
+   Written as R12 (AC1009): the flavour every CAD package reads without
+   argument. That rules out true colour (group 420) and LWPOLYLINE, so
+   colours are matched to the nearest AutoCAD Colour Index and regions
+   are written as POLYLINE/VERTEX/SEQEND.                                */
+const dxfSafe=s=>String(s).replace(/[^A-Z0-9_-]/gi,'_');
+const ACI=(()=>{
+  const P=[null,[255,0,0],[255,255,0],[0,255,0],[0,255,255],[0,0,255],[255,0,255],
+           [255,255,255],[65,65,65],[128,128,128]];
+  const hsv=(h,s,v)=>{
+    const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let r,g,b;
+    if(h<60){r=c;g=x;b=0}else if(h<120){r=x;g=c;b=0}else if(h<180){r=0;g=c;b=x}
+    else if(h<240){r=0;g=x;b=c}else if(h<300){r=x;g=0;b=c}else{r=c;g=0;b=x}
+    return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
+  };
+  const SV=[[1,1],[.5,1],[1,.75],[.5,.75],[1,.6],[.5,.6],[1,.45],[.5,.45],[1,.3],[.5,.3]];
+  for(let h=0;h<24;h++)for(let k=0;k<10;k++)P[10+h*10+k]=hsv(h*15,SV[k][0],SV[k][1]);
+  [51,91,132,173,214,255].forEach((v,i)=>P[250+i]=[v,v,v]);
+  return P;
+})();
+function nearestACI(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  let best=7,bd=Infinity;
+  for(let i=1;i<256;i++){
+    const c=ACI[i];if(!c)continue;
+    const d=(c[0]-r)**2+(c[1]-g)**2+(c[2]-b)**2;
+    if(d<bd){bd=d;best=i;}
+  }
+  return best;
+}
+function exportDXF(){
+  if(!S.grids){msg('Load two surfaces first',true);return;}
+  const A=S.surfs[S.base],B=S.surfs[S.comp];
+  const bb=commonBB(A,B);
+  const cell=+$('exCell').value, lbl=+$('exLbl').value;
+  const g=makeGrid(bb,cell), za=rasterise(A,g), zb=rasterise(B,g);
+  const oA=A.off,oB=B.off;
+  const o=[];const G=(c,v)=>{o.push(c,v)};
+  const bandACI=S.bands.map(x=>nearestACI(x.col));
+  const lx=bb.x1+Math.max(10,(bb.x1-bb.x0)*0.06), sw=Math.max(2,(bb.y1-bb.y0)*0.02);
+
+  /* header — declaring R12 is what makes this load everywhere */
+  G(0,'SECTION');G(2,'HEADER');
+  G(9,'$ACADVER');G(1,'AC1009');
+  G(9,'$INSBASE');G(10,'0.0');G(20,'0.0');G(30,'0.0');
+  G(9,'$EXTMIN');G(10,bb.x0.toFixed(3));G(20,bb.y0.toFixed(3));G(30,'0.0');
+  G(9,'$EXTMAX');G(10,(lx+sw*22).toFixed(3));G(20,bb.y1.toFixed(3));G(30,'0.0');
+  G(0,'ENDSEC');
+
+  /* tables — a linetype must exist before any layer may reference it */
+  G(0,'SECTION');G(2,'TABLES');
+  G(0,'TABLE');G(2,'LTYPE');G(70,'1');
+  G(0,'LTYPE');G(2,'CONTINUOUS');G(70,'0');G(3,'Solid line');G(72,'65');G(73,'0');G(40,'0.0');
+  G(0,'ENDTAB');
+  const layers=[['DIFF-COLOUR',7],['DIFF-LABELS',8],['DIFF-LEGEND',7],['REGIONS',2]];
+  G(0,'TABLE');G(2,'LAYER');G(70,String(layers.length));
+  for(const [n,c] of layers){G(0,'LAYER');G(2,n);G(70,'0');G(62,String(c));G(6,'CONTINUOUS');}
+  G(0,'ENDTAB');G(0,'ENDSEC');
+
+  G(0,'SECTION');G(2,'ENTITIES');
+  const solid=(layer,aci,x0,y0,x1,y1)=>{
+    G(0,'SOLID');G(8,layer);G(62,String(aci));
+    G(10,x0.toFixed(3));G(20,y0.toFixed(3));G(30,'0.0');
+    G(11,x1.toFixed(3));G(21,y0.toFixed(3));G(31,'0.0');
+    G(12,x0.toFixed(3));G(22,y1.toFixed(3));G(32,'0.0');
+    G(13,x1.toFixed(3));G(23,y1.toFixed(3));G(33,'0.0');
+  };
+  const text=(layer,x,y,h,t,centre)=>{
+    G(0,'TEXT');G(8,layer);
+    G(10,x.toFixed(3));G(20,y.toFixed(3));G(30,'0.0');G(40,h.toFixed(3));G(1,t);
+    if(centre){G(72,'1');G(11,x.toFixed(3));G(21,y.toFixed(3));G(31,'0.0');}
+  };
+
+  /* coloured cells, runs merged along each row to keep the file small */
+  let solids=0;
+  for(let j=0;j<g.ny;j++){
+    let runStart=-1,runBand=-2;
+    const flush=iEnd=>{
+      if(runStart<0||runBand<0)return;
+      solid('DIFF-COLOUR',bandACI[runBand],
+            g.x0+runStart*cell, g.y0+j*cell, g.x0+(iEnd+1)*cell, g.y0+(j+1)*cell);
+      solids++;
+    };
+    for(let i=0;i<g.nx;i++){
+      const a=za[j*g.nx+i],b=zb[j*g.nx+i];
+      const bi=(a!==a||b!==b)?-1:bandOf((b+oB)-(a+oA));
+      if(bi!==runBand){flush(i-1);runStart=bi>=0?i:-1;runBand=bi;}
+    }
+    flush(g.nx-1);
+  }
+
+  /* difference labels on their own, coarser grid */
+  const gl=makeGrid(bb,lbl), la=rasterise(A,gl), lb=rasterise(B,gl);
+  const th=Math.max(0.4,lbl/12);
+  let labels=0;
+  for(let j=0;j<gl.ny;j++)for(let i=0;i<gl.nx;i++){
+    const a=la[j*gl.nx+i],b=lb[j*gl.nx+i];
+    if(a!==a||b!==b)continue;
+    const d=(b+oB)-(a+oA);
+    text('DIFF-LABELS',gl.x0+(i+0.5)*lbl,gl.y0+(j+0.5)*lbl,th,(d>=0?'+':'-')+Math.abs(d).toFixed(2),true);
+    labels++;
+  }
+
+  /* legend: the band table beside the site */
+  const vols=bandVolumes();
+  let ly=bb.y1, lth=sw*0.7;
+  text('DIFF-LEGEND',lx,ly,lth*1.5,A.name+' to '+B.name); ly-=sw*2;
+  text('DIFF-LEGEND',lx,ly,lth,'Cut '+Math.round(S.vol.cut)+' m3   Fill '+Math.round(S.vol.fill)+
+       ' m3   Net '+Math.round(S.vol.net)+' m3'); ly-=sw*2;
+  S.bands.forEach((bd,i)=>{
+    solid('DIFF-LEGEND',bandACI[i],lx,ly,lx+sw,ly+sw);
+    text('DIFF-LEGEND',lx+sw*1.4,ly+sw*0.15,lth,
+         bd.min.toFixed(2)+' to '+bd.max.toFixed(2)+' m    '+Math.round(vols[i])+' m3');
+    ly-=sw*1.35;
+  });
+
+  /* regions — POLYLINE, since LWPOLYLINE does not exist in R12 */
+  for(const r of S.regions){
+    G(0,'POLYLINE');G(8,'REGIONS');G(66,'1');G(70,'1');
+    G(10,'0.0');G(20,'0.0');G(30,'0.0');
+    for(const pt of r.pts){
+      G(0,'VERTEX');G(8,'REGIONS');G(10,pt.x.toFixed(3));G(20,pt.y.toFixed(3));G(30,'0.0');
+    }
+    G(0,'SEQEND');G(8,'REGIONS');
+    const c=r.pts.reduce((a,pt)=>({x:a.x+pt.x/r.pts.length,y:a.y+pt.y/r.pts.length}),{x:0,y:0});
+    text('REGIONS',c.x,c.y,lth,r.name+(r.v?'  net '+Math.round(r.v.net)+' m3':''),true);
+  }
+
+  G(0,'ENDSEC');G(0,'EOF');
+  let out='';for(let i=0;i<o.length;i+=2)out+=String(o[i]).padStart(3,' ')+'\n'+o[i+1]+'\n';
+  save(dxfSafe(A.name+'-to-'+B.name)+'.dxf',out,'application/dxf');
+  msg('DXF written — '+solids+' coloured cells, '+labels+' labels, '+S.bands.length+' bands, '+S.regions.length+' regions');
+}
+
+/* ── LandXML out: the difference itself, as a surface ── */
+function exportDiffXML(){
+  if(!S.grids){msg('Load two surfaces first',true);return;}
+  const A=S.surfs[S.base],B=S.surfs[S.comp];
+  const {g,a,b}=S.grids.coarse, oA=A.off,oB=B.off;
+  const id=new Int32Array(g.nx*g.ny).fill(-1);
+  const P=[];
+  for(let j=0;j<g.ny;j++)for(let i=0;i<g.nx;i++){
+    const za=a[j*g.nx+i],zb=b[j*g.nx+i];
+    if(za!==za||zb!==zb)continue;
+    id[j*g.nx+i]=P.length;
+    P.push([g.y0+(j+0.5)*g.cell, g.x0+(i+0.5)*g.cell, (zb+oB)-(za+oA)]);
+  }
+  if(!P.length){msg('Nothing to export',true);return;}
+  const F=[];
+  for(let j=0;j<g.ny-1;j++)for(let i=0;i<g.nx-1;i++){
+    const p=id[j*g.nx+i],q=id[j*g.nx+i+1],r=id[(j+1)*g.nx+i],t=id[(j+1)*g.nx+i+1];
+    if(p>=0&&q>=0&&t>=0)F.push([p+1,q+1,t+1]);
+    if(p>=0&&t>=0&&r>=0)F.push([p+1,t+1,r+1]);
+  }
+  const d=new Date().toISOString();
+  let x='<?xml version="1.0"?>\n<LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" version="1.2" date="'+d.slice(0,10)+'" time="'+d.slice(11,19)+'">\n'+
+    '<Units><Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter"/></Units>\n'+
+    '<Application name="Surface Solver" version="2.0"/>\n'+
+    '<Surfaces><Surface name="'+A.name+' to '+B.name+' difference"><Definition surfType="TIN">\n<Pnts>\n';
+  P.forEach((p,i)=>{x+='<P id="'+(i+1)+'">'+p[0].toFixed(4)+' '+p[1].toFixed(4)+' '+p[2].toFixed(4)+'</P>\n';});
+  x+='</Pnts>\n<Faces>\n';
+  for(const f of F)x+='<F>'+f[0]+' '+f[1]+' '+f[2]+'</F>\n';
+  x+='</Faces>\n</Definition></Surface></Surfaces>\n</LandXML>\n';
+  save(dxfSafe(A.name+'-to-'+B.name)+'-difference.xml',x,'application/xml');
+  msg('LandXML written — '+P.length+' points, '+F.length+' triangles of difference');
+}
+
+function save(name,text,mime){
+  const bl=new Blob([text],{type:mime||'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+
+/* ── wiring ── */
+$('rDraw').onclick=()=>{
+  if(S.mode!=='diff'){$('tdiff').click();}
+  S.drawing=[];msg('Click each corner of the region, Enter to close it, Esc to abandon');draw();
+};
+$('rImport').onclick=()=>$('rFile').click();
+$('rFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const polys=readDXF(r.result);
+    if(!polys.length){msg('No closed polylines found in that DXF',true);return;}
+    for(const pts of polys){
+      const reg={name:'Region '+(S.regions.length+1),pts};
+      reg.v=regionVolume(pts);S.regions.push(reg);
+    }
+    msg(polys.length+' region(s) imported from DXF');
+    drawRegionList();draw();
+  };
+  r.readAsText(f);e.target.value='';
+};
+$('exDXF').onclick=exportDXF;
+$('exXML').onclick=exportDiffXML;
+addEventListener('keydown',e=>{
+  if(!S.drawing)return;
+  if(e.key==='Enter'){finishRegion();}
+  else if(e.key==='Escape'){S.drawing=null;msg('Region abandoned');draw();}
+});
 
 let saved='en';try{saved=localStorage.getItem('surfsolver-lang')||'en'}catch(e){}
 $('lang').value=saved;applyLang(saved);
