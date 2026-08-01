@@ -3,92 +3,162 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Surface Solver — compare two surfaces</title>
+<title>Volume Solver — compare two surfaces</title>
 <style>
+:root{
+  --graphite:#1D2025;
+  --graphite-2:#262A31;
+  --graphite-3:#31363F;
+  --film:#F2F1EC;
+  --ink:#15171B;
+  --mute:#8A9099;
+  --lcd:#E0A100;
+  --cut:#E8836B;
+  --fill:#6FC3F5;
+  --ok:#2E8B57;
+  --stencil:"Arial Narrow","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --data:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#10141a;color:#cfd8e3;
-  font:13px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
-header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:linear-gradient(180deg,#1b2430,#151c25);
-  border-bottom:1px solid #0a0d12;box-shadow:0 1px 0 #ffffff08 inset}
-h1{margin:0;font:600 16px/1 system-ui;letter-spacing:.02em;color:#e8eef6}
-h1 b{color:#f2b01e;font-weight:600}
-.sub{color:#7d8794;font-size:12px}
-.spacer{flex:1}
-.tag{background:#141a22;border:1px solid #2b3644;border-radius:6px;padding:4px 9px;font-size:12px;color:#9fb0c3}
-.langsel{background:#141a22;color:#cfd8e3;border:1px solid #2b3644;border-radius:6px;
-  padding:4px 8px;font:inherit;font-size:12px;cursor:pointer}
-.langsel:hover{border-color:#3d7ab8}
-#app{display:flex;height:calc(100% - 41px)}
-#panel{width:330px;overflow-y:auto;background:#151b23;border-right:1px solid #0a0d12}
-.card{padding:11px 13px;border-bottom:1px solid #0e131a}
-.card h2{margin:0 0 8px;font:600 11px/1 system-ui;letter-spacing:.09em;text-transform:uppercase;color:#f2b01e}
-.hint{margin:6px 0 0;font-size:11.5px;color:#7d8794;line-height:1.5}
-button{background:linear-gradient(180deg,#2c3644,#232c38);color:#cfd8e3;border:1px solid #0d1117;
-  border-top-color:#3a4655;border-radius:5px;padding:7px 9px;font:inherit;font-size:12px;cursor:pointer}
-button:hover{filter:brightness(1.15)}
-button:active{transform:translateY(1px)}
-button.on{background:linear-gradient(180deg,#f0b429,#d99413);color:#231a00;border-top-color:#ffd97a}
-button.wide{width:100%;margin-top:6px}
-button.sm{padding:3px 7px;font-size:11px}
-select,input[type=text],input[type=number]{background:#0f141b;color:#cfd8e3;border:1px solid #2b3644;
-  border-radius:5px;padding:5px 7px;font:inherit;font-size:12px;width:100%}
+html,body{height:100%;margin:0}
+body{background:var(--graphite);color:#D8DBDF;font-family:var(--data);font-size:12px;
+  display:flex;flex-direction:column;overflow:hidden}
+h1,h2,h3,.stencil{font-family:var(--stencil);text-transform:uppercase;letter-spacing:.14em;font-weight:700}
+header{display:flex;align-items:stretch;flex-direction:column;gap:6px;padding:9px 14px;
+  background:var(--graphite-2);border-bottom:1px solid #000;flex:0 0 auto}
+header h1{font-size:15px;margin:0;color:#fff;flex:0 0 auto;margin-right:6px}
+.hrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;width:100%}
+.hright{margin-left:auto;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.lays{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+header .toolbar{background:transparent;border:0;padding:0;flex:0 1 auto;min-width:0}
+.toolbar{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.tool{background:transparent;border:1px solid var(--graphite-3);color:#B9BEC6}
+.tool.on{background:var(--lcd);color:#1A1200;border-color:#8A6500}
+.sep{width:1px;height:20px;background:var(--graphite-3);margin:0 3px}
+.lay{display:flex;align-items:center;gap:4px;color:#B9BEC6;font-size:11px;cursor:pointer}
+.lay input{accent-color:var(--lcd)}
+main{flex:1;display:flex;min-height:0}
+.panel{width:300px;flex:0 0 auto;background:var(--graphite-2);overflow-y:auto;
+  border-right:1px solid #000;padding-bottom:24px}
+.stage{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;background:#0C1015}
+section{border-bottom:1px solid #000;padding:10px 12px}
+section h2{font-size:11px;margin:0 0 8px;color:var(--lcd)}
+.panel section>h2{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.panel section>h2::after{content:'▾';color:var(--mute);font-size:10px;margin-left:8px}
+.panel section.collapsed>h2::after{content:'▸'}
+.panel section.collapsed>*:not(h2){display:none}
+label.f{display:block;color:var(--mute);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  margin:6px 0 3px;font-family:var(--stencil)}
+label.chk{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:11.5px;color:#B9BEC6;cursor:pointer}
+label.chk input{accent-color:var(--lcd)}
+select,input[type=text],input[type=number]{width:100%;background:var(--graphite);color:#E6E9EC;
+  border:1px solid var(--graphite-3);border-radius:2px;padding:5px 6px;font-family:var(--data);font-size:12px}
 input[type=number]{padding:3px 5px}
-label.f{display:block;margin:8px 0 3px;font-size:11px;color:#8d99a8;text-transform:uppercase;letter-spacing:.06em}
-label.chk{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12px;color:#aab6c4;cursor:pointer}
+input:disabled{opacity:.75;cursor:not-allowed;background:#171A1F;color:#8A9099}
+input[type=color]{width:26px;height:20px;padding:0;border:1px solid var(--graphite-3);
+  border-radius:2px;background:none;cursor:pointer}
+button{font-family:var(--stencil);text-transform:uppercase;letter-spacing:.1em;font-size:11px;font-weight:700;
+  background:var(--graphite-3);color:#E6E9EC;border:1px solid #10131A;border-radius:2px;padding:6px 9px;cursor:pointer}
+button:hover{background:#3D434E}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--lcd);outline-offset:1px}
+button.on,button.primary{background:var(--lcd);color:#1A1200;border-color:#8A6500}
+button.primary:hover{background:#F0B518}
+button.wide{width:100%;margin-top:6px}
+button.sm{padding:2px 6px;font-size:10px;letter-spacing:.06em}
+button[disabled]{opacity:.4;cursor:not-allowed}
+button.ico{font-size:16px;line-height:1;padding:3px 8px;min-width:30px}
+.unitbtn{color:#ff5a52;border-color:#7a2b28;font-weight:700;letter-spacing:.08em;background:transparent}
+.unitbtn:hover{border-color:#ff5a52;background:#2a1513}
+.langsel{background:var(--graphite);color:#D8DBDF;border:1px solid var(--graphite-3);border-radius:4px;
+  width:auto;min-width:0;padding:3px 6px;font:inherit;font-size:11px;cursor:pointer}
+.langsel:hover{border-color:var(--lcd)}
+.vex{width:46px;background:var(--graphite);color:#E6E9EC;border:1px solid var(--graphite-3);
+  border-radius:2px;padding:3px 4px;font:inherit;font-size:11px}
+.vexwrap{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;font-family:var(--stencil);
+  text-transform:uppercase;letter-spacing:.06em;font-size:10px;color:var(--mute)}
+.tag{font-family:var(--stencil);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
 .row{display:flex;gap:6px}
 .row>*{flex:1}
-.drop{border:1.5px dashed #33404f;border-radius:8px;padding:16px 10px;text-align:center;color:#7d8794;
-  font-size:12px;cursor:pointer;transition:.15s}
-.drop:hover,.drop.over{border-color:#f2b01e;color:#cfd8e3;background:#f2b01e0d}
-.surf{background:#111820;border:1px solid #232d3a;border-radius:7px;padding:8px;margin-bottom:7px}
-.surf .nm{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#e8eef6;margin-bottom:4px}
-.surf .sw{width:12px;height:12px;border-radius:3px;flex:none;border:1px solid #0008}
-.surf .meta{font-size:11px;color:#7d8794;margin-bottom:6px}
+.hint{color:var(--mute);font-size:11px;line-height:1.45;margin:6px 0 0}
+.kv{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px dotted #363B44}
+.kv span:first-child{color:var(--mute)}
+.kv span:last-child{font-variant-numeric:tabular-nums;color:#E6E9EC}
+.kv.big span:last-child{font-size:14px;font-weight:700;color:var(--lcd)}
+.cut{color:var(--cut)}.fill{color:var(--fill)}
+.drop{border:1.5px dashed var(--graphite-3);border-radius:3px;padding:16px 10px;text-align:center;
+  color:var(--mute);font-size:11.5px;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--lcd);color:#E6E9EC;background:#E0A1000d}
+.surf{background:#171A1F;border:1px solid var(--graphite-3);border-radius:2px;padding:8px;margin-bottom:7px}
+.surf .nm{display:flex;align-items:center;gap:6px;font-size:12px;color:#E6E9EC;margin-bottom:4px}
+.surf .sw{width:10px;height:10px;border-radius:1px;flex:none;border:1px solid #0008}
+.surf .meta{font-size:10.5px;color:var(--mute);margin-bottom:6px}
 .roles{display:flex;gap:5px;margin-bottom:6px}
-.roles button{flex:1;font-size:11px;padding:4px}
+.roles button{flex:1;font-size:10px;padding:4px 2px}
 .offrow{display:flex;align-items:center;gap:5px}
 .offrow input{width:100%;text-align:right}
-.offrow button{padding:3px 7px;font-size:11px;flex:none}
-table{width:100%;border-collapse:collapse;font-size:11.5px}
-th{text-align:left;color:#8d99a8;font-weight:600;padding:3px 4px;border-bottom:1px solid #232d3a;
-  font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
-td{padding:2px 4px;border-bottom:1px solid #1a222c}
+.offrow button{padding:3px 6px;font-size:10px;flex:none}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;color:var(--mute);font-weight:400;padding:3px 4px;border-bottom:1px solid var(--graphite-3);
+  font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+td{padding:2px 4px;border-bottom:1px solid #22262C}
 td.num{text-align:right;font-variant-numeric:tabular-nums}
-input[type=color]{width:26px;height:20px;padding:0;border:1px solid #2b3644;border-radius:4px;background:none;cursor:pointer}
-.kv{display:flex;justify-content:space-between;padding:3px 0;font-size:12.5px}
-.kv span:last-child{font-variant-numeric:tabular-nums;color:#e8eef6}
-.kv.big span:last-child{font-size:14px;font-weight:600}
-.cut{color:#f08a70}.fill{color:#6fc3f5}
-main{flex:1;position:relative;background:#0c1015}
-canvas{display:block;width:100%;height:100%;cursor:grab}
+a.linkbtn{display:block;width:100%;margin-top:6px;text-align:center;text-decoration:none;
+  font-family:var(--stencil);text-transform:uppercase;letter-spacing:.1em;font-size:11px;font-weight:700;
+  background:var(--graphite-3);color:#E6E9EC;border:1px solid #10131A;border-radius:2px;padding:6px 9px;cursor:pointer}
+a.linkbtn:hover{background:#3D434E}
+#wrap{flex:1;position:relative;min-height:0}
+canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
 canvas.dragging{cursor:grabbing}
-.tabs{position:absolute;top:10px;left:10px;display:flex;gap:5px;z-index:5}
-.readout{position:absolute;bottom:10px;left:10px;background:#0f141bdd;border:1px solid #2b3644;
-  border-radius:6px;padding:6px 10px;font-size:11.5px;color:#9fb0c3;pointer-events:none}
-.msg{position:absolute;top:10px;right:10px;background:#0f141bdd;border:1px solid #2b3644;
-  border-radius:6px;padding:6px 11px;font-size:12px;color:#cfd8e3;max-width:340px}
-.msg.warn{border-color:#8a4a3a;color:#f0a68f}
+.readout{position:absolute;bottom:9px;left:9px;z-index:7;background:#0d1218ee;border:1px solid #26303b;
+  border-radius:3px;padding:5px 9px;font-size:11px;color:#9fb0c3;pointer-events:none}
+.msg{position:absolute;bottom:9px;right:9px;z-index:7;background:#0d1218ee;border:1px solid #26303b;
+  border-radius:3px;padding:5px 10px;font-size:11.5px;color:#cfd8e3;max-width:340px}
+.msg.warn{border-color:#7d4636;color:#f0a68f}
+/* section strip, laid out the way the grading tool does it */
+.sect{position:absolute;left:0;right:0;bottom:0;height:216px;background:#0d1218f2;
+  border-top:1px solid #26303b;z-index:6;display:flex;flex-direction:column}
+.shead{display:flex;align-items:center;gap:11px;padding:5px 10px;border-bottom:1px solid #1a222c;font-size:11px}
+.shead b{color:var(--lcd);font-family:var(--stencil);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.sc{display:flex;align-items:center;gap:4px;cursor:pointer;color:#9fb0c3;white-space:nowrap}
+.sc input{accent-color:var(--lcd)}
+.shead .spacer{flex:1}
+#sectInfo{color:#828d9b;font-variant-numeric:tabular-nums}
+#scv{flex:1;width:100%;cursor:default}
 .hide{display:none}
+@media(max-width:900px){
+  main{flex-direction:column;overflow-y:auto}
+  .panel{width:100%;border-right:0;border-bottom:1px solid #000}
+  .stage{order:-1;height:62vh;flex:0 0 auto}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>Surface <b>Solver</b></h1>
-  <span class="sub">load two LandXML surfaces, compare them, read the volume</span>
-  <span class="spacer"></span>
-  <select id="lang" class="langsel" title="Language">
-    <option value="en">English</option>
-    <option value="pt">Português (PT)</option>
-    <option value="fr">Français</option>
-    <option value="es">Español</option>
-  </select>
-  <span class="tag" id="stat">no surfaces loaded</span>
+  <div class="hrow">
+    <h1>Volume Solver</h1>
+    <div class="toolbar">
+      <button id="t3d" class="tool on">3D view</button>
+      <button id="tdiff" class="tool">Difference map</button>
+      <span class="sep"></span>
+      <button id="tSect" class="tool" title="Click two points on the difference map to cut a section">&#9986; Section</button>
+    </div>
+    <div class="lays">
+      <label class="lay"><input type="checkbox" id="wire">Wireframe</label>
+      <label class="lay"><input type="checkbox" id="shade" checked>Shading</label>
+    </div>
+    <div class="hright">
+      <label class="vexwrap" title="Vertical exaggeration (3D view)">Z scale <input id="vex" class="vex" type="number" min="0.5" max="20" step="0.5" value="1"></label>
+      <button id="fitview" class="ico" title="Zoom to fit">&#9634;</button>
+      <button id="units" class="unitbtn" title="Set the units your files are in (metric / imperial)">METRIC</button>
+      <select id="lang" class="langsel" title="Language"><option value="en">EN</option><option value="pt">PT</option><option value="fr">FR</option><option value="es">ES</option></select>
+    </div>
+  </div>
 </header>
 
-<div id="app">
-  <aside id="panel">
+<main>
+  <div class="panel">
 
-    <div class="card">
+    <section>
       <h2>1 · Surfaces</h2>
       <div class="drop" id="drop">Drop LandXML files here<br><span style="font-size:11px">or click to choose</span></div>
       <input type="file" id="file" accept=".xml,.landxml" multiple class="hide">
@@ -99,9 +169,9 @@ canvas.dragging{cursor:grabbing}
         <option value="nez">Northing, Easting, Elevation — LandXML standard</option>
         <option value="enz">Easting, Northing, Elevation</option>
       </select>
-    </div>
+    </section>
 
-    <div class="card">
+    <section>
       <h2>2 · Grids</h2>
       <label class="f">Computation grid — sets the volume</label>
       <select id="fine">
@@ -118,19 +188,18 @@ canvas.dragging{cursor:grabbing}
         <option value="1">1.00 m</option>
       </select>
       <p class="hint">The volume always comes from the fine grid, so the map can stay readable without blunting the number.</p>
-    </div>
+    </section>
 
-    <div class="card">
+    <section>
       <h2>3 · Volume</h2>
       <div class="kv"><span class="cut">Cut</span><span id="vcut">—</span></div>
       <div class="kv"><span class="fill">Fill</span><span id="vfill">—</span></div>
       <div class="kv big"><span>Net</span><span id="vnet">—</span></div>
       <div class="kv"><span>Common area</span><span id="varea">—</span></div>
-      <button class="wide" id="balance">Solve the offset that balances cut and fill</button>
       <p class="hint" id="conv"></p>
-    </div>
+    </section>
 
-    <div class="card">
+    <section>
       <h2>4 · Colour bands</h2>
       <table id="bands"><thead><tr>
         <th style="width:30px"></th><th class="num">Min</th><th class="num">Max</th><th class="num">Volume</th><th style="width:22px"></th>
@@ -140,20 +209,20 @@ canvas.dragging{cursor:grabbing}
         <button class="sm" id="bFit">Fit to data</button>
       </div>
       <p class="hint">Band volumes are measured on the fine grid, so they add up to the net above.</p>
-    </div>
+    </section>
 
-    <div class="card">
+    <section>
       <h2>5 · Regions</h2>
       <div class="row">
         <button id="rDraw">Draw region</button>
-        <button id="rImport">Import DXF</button>
+        <button id="rImport">Import from DXF</button>
       </div>
       <input type="file" id="rFile" accept=".dxf" class="hide">
       <div id="rlist" style="margin-top:7px"></div>
       <p class="hint">Draw a closed polyline on the difference map: click each corner, Enter to close it, Esc to abandon. Or bring your outlines in from a DXF.</p>
-    </div>
+    </section>
 
-    <div class="card">
+    <section>
       <h2>6 · Export</h2>
       <label class="f">Colour fill</label>
       <select id="exStyle">
@@ -165,51 +234,104 @@ canvas.dragging{cursor:grabbing}
         <option value="0.5">0.50 m</option><option value="1" selected>1.00 m</option>
         <option value="2">2.00 m</option><option value="5">5.00 m</option>
       </select>
+      <label class="f">Smallest feature kept</label>
+      <select id="exMin">
+        <option value="0">Off — keep every speck</option>
+        <option value="5">5 m2</option><option value="10" selected>10 m2</option>
+        <option value="25">25 m2</option><option value="50">50 m2</option>
+      </select>
       <label class="f">Difference label spacing</label>
       <select id="exLbl">
         <option value="5">5 m</option><option value="10" selected>10 m</option>
         <option value="20">20 m</option><option value="25">25 m</option>
       </select>
+      <label class="f">Difference surface spacing</label>
+      <select id="exSurf">
+        <option value="0.5">0.50 m</option><option value="1" selected>1.00 m</option>
+        <option value="2">2.00 m</option><option value="5">5.00 m</option>
+      </select>
       <button class="wide" id="exDXF">Export DXF — colours, table, labels</button>
       <button class="wide" id="exXML">Export difference as LandXML surface</button>
-      <p class="hint">The DXF carries the coloured grid, the band table as a legend, difference labels on their own grid, and any regions — each on its own layer.</p>
-    </div>
+      <p class="hint">The DXF carries the coloured grid, the band table as a legend, difference labels on their own grid, and any regions. Each band gets its own layer so you can freeze it in CAD. Specks smaller than the setting above are absorbed into the band around them — on noisy survey-vs-survey work that is the difference between a readable plan and stipple.</p>
+    </section>
 
-    <div class="card">
-      <h2>7 · View</h2>
-      <label class="chk"><input type="checkbox" id="wire">Wireframe</label>
-      <label class="chk"><input type="checkbox" id="shade" checked>Shading</label>
-      <label class="f">Vertical exaggeration</label>
-      <select id="vex">
-        <option value="1" selected>1 ×</option><option value="2">2 ×</option>
-        <option value="5">5 ×</option><option value="10">10 ×</option>
-      </select>
-      <button class="wide" id="fitview">Zoom to fit</button>
-      <p class="hint">Drag to orbit, wheel to zoom, right-drag or shift-drag to pan.</p>
-    </div>
+    <section>
+      <h2>Help</h2>
+      <a class="linkbtn" href="https://github.com/howtocivilengineer/Volume-Solver/blob/main/README.md" target="_blank" rel="noopener">Readme — guide &amp; docs</a>
+      <a class="linkbtn" href="https://www.youtube.com/@howtocivilengineer" target="_blank" rel="noopener">Video walkthrough</a>
+      <p class="hint">Both open in a new tab.</p>
+    </section>
+  </div>
 
-  </aside>
-
-  <main>
-    <div class="tabs">
-      <button id="t3d" class="on">3D view</button>
-      <button id="tdiff">Difference map</button>
+  <div class="stage">
+    <div id="wrap">
+      <canvas id="cv"></canvas>
+      <div class="sect hide" id="sect">
+        <div class="shead">
+          <b>Section</b>
+          <label class="sc"><input type="checkbox" id="sA" checked><span id="sAlab" style="color:#4CAF50">Base</span></label>
+          <label class="sc"><input type="checkbox" id="sAo" checked><span id="sAolab" style="color:#6EE787">Base adjusted</span></label>
+          <label class="sc"><input type="checkbox" id="sB" checked><span id="sBlab" style="color:#C97B3A">Comparison</span></label>
+          <label class="sc"><input type="checkbox" id="sBo" checked><span id="sBolab" style="color:#FFD166">Comparison adjusted</span></label>
+          <span class="spacer"></span>
+          <span id="sectInfo"></span>
+          <button id="sectClose" class="sm">&#10005;</button>
+        </div>
+        <canvas id="scv"></canvas>
+      </div>
+      <div class="readout" id="read"></div>
+      <div class="msg" id="msg"></div>
     </div>
-    <canvas id="cv"></canvas>
-    <div class="readout" id="read"></div>
-    <div class="msg" id="msg"></div>
-  </main>
-</div>
+  </div>
+</main>
 
 <script>
 /* ══════════════════════════════════════════════════════════════════
-   Surface Solver — two LandXML surfaces in, volume and difference out.
+   Volume Solver — two LandXML surfaces in, volume and difference out.
    Everything runs in this page; nothing is uploaded anywhere.
    ══════════════════════════════════════════════════════════════════ */
 const $=id=>document.getElementById(id);
 
 /* ───────────────────────── languages ───────────────────────── */
 const TR={
+"The two surfaces do not overlap":["As duas superfícies não se sobrepõem","Les deux surfaces ne se chevauchent pas","Las dos superficies no se solapan"],
+"Set by the comparison — the largest difference measured between the two surfaces":["Definido pela comparação — a maior diferença medida entre as duas superfícies","Défini par la comparaison — le plus grand écart mesuré entre les deux surfaces","Definido por la comparación — la mayor diferencia medida entre las dos superficies"],
+"The last band is too narrow to split":["A última faixa é demasiado estreita para dividir","La dernière bande est trop étroite pour être divisée","La última franja es demasiado estrecha para dividirla"],
+"Difference surface spacing":["Espaçamento da superfície de diferença","Espacement de la surface d'écart","Espaciado de la superficie de diferencia"],
+"Off — keep every speck":["Desligado — manter todas as manchas","Désactivé — garder chaque tache","Desactivado — mantener cada mancha"],
+"Smallest feature kept":["Menor elemento mantido","Plus petit élément conservé","Elemento más pequeño conservado"],
+"Colour fill":["Preenchimento de cor","Remplissage couleur","Relleno de color"],
+"Hatched bands — light":["Faixas tracejadas — leve","Bandes hachurées — léger","Bandas con trama — ligero"],
+"Solid grid cells — heavy":["Células sólidas da grelha — pesado","Cellules pleines — lourd","Celdas sólidas — pesado"],
+"Import from DXF":["Importar de DXF","Importer depuis un DXF","Importar desde DXF"],
+"Help":["Ajuda","Aide","Ayuda"],
+"Readme — guide & docs":["Readme — guia e documentação","Readme — guide et docs","Readme — guía y documentos"],
+"Video walkthrough":["Vídeo explicativo","Vidéo explicative","Vídeo explicativo"],
+"Both open in a new tab.":["Ambos abrem num novo separador.","Les deux s'ouvrent dans un nouvel onglet.","Ambos se abren en una pestaña nueva."],
+"Z scale":["Escala Z","Échelle Z","Escala Z"],
+"Section":["Perfil","Profil","Perfil"],
+"Base adjusted":["Base ajustada","Base ajustée","Base ajustada"],
+"Comparison adjusted":["Comparação ajustada","Comparaison ajustée","Comparación ajustada"],
+"adjusted":["ajustada","ajustée","ajustada"],
+"Tick a surface to see it":["Marque uma superfície para a ver","Cochez une surface pour la voir","Marque una superficie para verla"],
+"Click two points to cut a section through the surfaces":["Clique em dois pontos para cortar um perfil pelas superfícies","Cliquez deux points pour couper un profil à travers les surfaces","Haga clic en dos puntos para cortar un perfil por las superficies"],
+"Now click the far end of the section":["Agora clique na outra extremidade do perfil","Cliquez maintenant l'autre extrémité du profil","Ahora haga clic en el otro extremo del perfil"],
+"Section cut":["Perfil cortado","Profil coupé","Perfil cortado"],
+"Section tool off":["Ferramenta de perfil desligada","Outil profil désactivé","Herramienta de perfil desactivada"],
+"At least one band is needed":["É necessária pelo menos uma faixa","Au moins une bande est nécessaire","Se necesita al menos una banda"],
+" net over ":[" líquido sobre "," net sur "," neto sobre "],
+"Working in ":["A trabalhar em ","Travail en ","Trabajando en "],
+" — this labels your data, it does not convert coordinates":[" — isto identifica os seus dados, não converte coordenadas"," — cela étiquette vos données, cela ne convertit pas les coordonnées"," — esto etiqueta sus datos, no convierte coordenadas"],
+"imperial (ft, yd³)":["imperial (ft, yd³)","impérial (ft, yd³)","imperial (ft, yd³)"],
+"metric (m, m³)":["métrico (m, m³)","métrique (m, m³)","métrico (m, m³)"],
+"DXF written, ":["DXF escrito, ","DXF écrit, ","DXF escrito, "],
+" hatched bands":[" faixas tracejadas"," bandes hachurées"," bandas con trama"],
+" coloured cells":[" células coloridas"," cellules colorées"," celdas de color"],
+" speck cells absorbed":[" células de mancha absorvidas"," cellules de tache absorbées"," celdas de mancha absorbidas"],
+". Label spacing eased to ":[". Espaçamento das etiquetas alargado para ",". Espacement des étiquettes élargi à ",". Espaciado de etiquetas ampliado a "],
+" to keep the file workable":[" para manter o ficheiro utilizável"," pour garder le fichier exploitable"," para mantener el archivo manejable"],
+". Most of the map was specks — the difference here is close to survey noise, so read the colours as a trend, not a boundary":[". A maior parte do mapa eram manchas — a diferença aqui está próxima do ruído do levantamento, leia as cores como tendência, não como limite",". La majeure partie de la carte était des taches — l'écart ici est proche du bruit du levé, lisez les couleurs comme une tendance, pas comme une limite",". La mayor parte del mapa eran manchas — la diferencia aquí está cerca del ruido del levantamiento, lea los colores como tendencia, no como límite"],
+"The DXF carries the coloured grid, the band table as a legend, difference labels on their own grid, and any regions. Each band gets its own layer so you can freeze it in CAD. Specks smaller than the setting above are absorbed into the band around them — on noisy survey-vs-survey work that is the difference between a readable plan and stipple.":["O DXF leva a grelha colorida, a tabela de faixas como legenda, etiquetas de diferença na sua própria grelha e quaisquer regiões. Cada faixa fica na sua própria camada para a poder congelar no CAD. Manchas menores do que a definição acima são absorvidas pela faixa em redor — em trabalho ruidoso de levantamento contra levantamento, é a diferença entre uma planta legível e um pontilhado.","Le DXF porte la grille colorée, le tableau des bandes en légende, les étiquettes d'écart sur leur propre grille et les régions éventuelles. Chaque bande a son propre calque, que vous pouvez geler dans le CAO. Les taches plus petites que le réglage ci-dessus sont absorbées par la bande environnante — sur un travail bruité de levé contre levé, c'est la différence entre un plan lisible et un pointillé.","El DXF lleva la malla coloreada, la tabla de franjas como leyenda, etiquetas de diferencia en su propia malla y cualquier región. Cada franja va en su propia capa para poder congelarla en el CAD. Las manchas menores que el ajuste anterior se absorben en la franja que las rodea — en trabajo ruidoso de levantamiento contra levantamiento, esa es la diferencia entre un plano legible y un punteado."],
 "load two LandXML surfaces, compare them, read the volume":["carregue duas superfícies LandXML, compare-as e leia o volume","chargez deux surfaces LandXML, comparez-les et lisez le volume","cargue dos superficies LandXML, compárelas y lea el volumen"],
 "no surfaces loaded":["nenhuma superfície carregada","aucune surface chargée","ninguna superficie cargada"],
 "1 · Surfaces":["1 · Superfícies","1 · Surfaces","1 · Superficies"],
@@ -232,7 +354,6 @@ const TR={
 "Fill":["Aterro","Remblai","Relleno"],
 "Net":["Saldo","Solde","Saldo"],
 "Common area":["Área comum","Surface commune","Área común"],
-"Solve the offset that balances cut and fill":["Calcular o desnível que equilibra escavação e aterro","Calculer le décalage qui équilibre déblai et remblai","Calcular el desnivel que equilibra desmonte y relleno"],
 "Min":["Mín","Min","Mín"],
 "Max":["Máx","Max","Máx"],
 "Volume":["Volume","Volume","Volumen"],
@@ -259,8 +380,6 @@ const TR={
 " loaded — ":[" carregada — "," chargée — "," cargada — "],
 " points, ":[" pontos, "," points, "," puntos, "],
 " triangles":[" triângulos"," triangles"," triángulos"],
-"Balanced at an offset of ":["Equilibrado com um desnível de ","Équilibré avec un décalage de ","Equilibrado con un desnivel de "],
-"Cut and fill cannot be balanced within ±20 m":["Não é possível equilibrar escavação e aterro dentro de ±20 m","Impossible d'équilibrer déblai et remblai dans ±20 m","No se puede equilibrar desmonte y relleno dentro de ±20 m"],
 "at ":["a ","à ","a "],
 "same volume to ":["mesmo volume até ","même volume à ","mismo volumen hasta "],
 " on a ":[" numa "," sur une "," en una "],
@@ -299,7 +418,6 @@ const TR={
 "surfaces":["superfícies","surfaces","superficies"],
 "Load two surfaces first":["Carregue primeiro duas superfícies","Chargez d'abord deux surfaces","Cargue primero dos superficies"],
 "Reload the files to apply the new point order":["Recarregue os ficheiros para aplicar a nova ordem de pontos","Rechargez les fichiers pour appliquer le nouvel ordre des points","Recargue los archivos para aplicar el nuevo orden de puntos"],
-" — net ":[" — saldo "," — solde "," — saldo "],
 " left by rounding the offset to 1 mm":[" deixado pelo arredondamento do desnível a 1 mm"," laissé par l'arrondi du décalage au mm"," dejado por el redondeo del desnivel a 1 mm"],
 "Difference at cursor":["Diferença no cursor","Différence au curseur","Diferencia en el cursor"]
 };
@@ -334,7 +452,7 @@ function applyLang(code){
   }
   document.documentElement.lang=LANG==='pt'?'pt-PT':LANG;
   try{localStorage.setItem('surfsolver-lang',LANG)}catch(e){}
-  drawSurfList();drawBands();showVol();drawRegionList();
+  drawSurfList();drawBands();showVol();drawRegionList();sectLabels();drawSection();
 }
 let LASTMSG='';
 const msg=(t,warn)=>{LASTMSG=t;const m=$('msg');m.textContent=T(t);m.className=warn?'msg warn':'msg';};
@@ -344,7 +462,8 @@ const S={
   surfs:[],          // {name,pts:Float64Array,faces:Int32Array,nP,nF,bb,off,vis,col}
   base:-1, comp:-1,
   fine:1, coarse:5,
-  mode:'3d',
+  mode:'3d', units:'m', tool:'pan',
+  sect:null, sectA:null, sShow:{a:1,ao:1,b:1,bo:1},
   vex:1, wire:false, shade:true,
   cam:{az:-0.7,el:0.5,dist:1,tx:0,ty:0,tz:0},
   v2:{s:1,ox:0,oy:0},
@@ -502,7 +621,7 @@ function recompute(){
   if(!S.fitted){S.fitted=true;fitBands(true);}
   S.volCoarse=volumeOn(gc,ca,cb,A.off,B.off);
   S.ms=Math.round(performance.now()-t0);DIFFDIRTY=true;
-  showVol();drawBands();recomputeRegions();draw();
+  showVol();drawBands();recomputeRegions();sectLabels();drawSection();draw();
 }
 
 /* ─────────────── colour bands ─────────────── */
@@ -527,8 +646,14 @@ function bandVolumes(){
   }
   return out;
 }
-function fitBands(quiet){
-  if(!S.grids)return;
+/** Bulk earthworks does not need centimetres on a colour key. */
+const r1=v=>Math.round(v*10)/10;
+
+/** The true extremes of the difference. These are a result of the two
+    surfaces, not a display choice, so the first band's floor and the last
+    band's ceiling are read from here and cannot be typed over. */
+function diffRange(){
+  if(!S.grids)return null;
   const {a,b}=S.grids.fine;
   const oA=S.surfs[S.base].off,oB=S.surfs[S.comp].off;
   let lo=Infinity,hi=-Infinity;
@@ -537,21 +662,56 @@ function fitBands(quiet){
     const d=(y+oB)-(x+oA);
     if(d<lo)lo=d;if(d>hi)hi=d;
   }
-  if(!isFinite(lo))return;
+  /* outward, not nearest: rounding a measured -4.32 up to -4.3 would put
+     real ground outside the band range */
+  return isFinite(lo)?{lo:Math.floor(lo*10)/10, hi:Math.ceil(hi*10)/10}:null;
+}
+/** Re-seat the locked ends. Called after anything that can change the
+    difference or the band list. */
+function lockEnds(){
+  const r=diffRange(); if(!r||!S.bands.length)return;
+  S.dRange=r;
+  S.bands[0].min=r.lo;
+  S.bands[S.bands.length-1].max=r.hi;
+}
+function fitBands(quiet){
+  if(!S.grids)return;
+  const r=diffRange(); if(!r)return;
+  const lo=r.lo,hi=r.hi;
   const n=S.bands.length, step=(hi-lo)/n;
   S.bands.forEach((band,i)=>{
-    band.min=+(lo+i*step).toFixed(3);
-    band.max=+(lo+(i+1)*step).toFixed(3);
+    band.min=r1(lo+i*step);
+    band.max=r1(lo+(i+1)*step);
   });
-  S.bands[0].min=+lo.toFixed(2);                 // locked to the actual minimum
-  S.bands[n-1].max=+hi.toFixed(2);               // and the actual maximum
-  if(!quiet)msg('Bands fitted to the data: '+lo.toFixed(2)+' m to '+hi.toFixed(2)+' m');
+  lockEnds();
+  if(!quiet)msg('Bands fitted to the data: '+lz(lo)+' to '+lz(hi));
   DIFFDIRTY=true;drawBands();draw();
 }
 
 /* ───────────────────── panel rendering ───────────────────── */
+/* ── units ─────────────────────────────────────────────────────────
+   The button declares what units your LandXML files are already in. It
+   relabels the readouts and swaps the grid presets; it never rescales
+   your coordinates. Volumes are the one conversion inside a system:
+   cubic feet are reported as cubic yards, the way earthworks are
+   actually measured. */
+const UNITS={
+  m :{lab:'m', vdiv:1, vlab:'m³', aper:10000, alab:'ha', alab2:'m²',
+      grid:['0.1','0.25','0.5','1'], exCell:['0.5','1','2','5'],
+      exMin:['0','5','10','25','50'], exLbl:['5','10','20','25'],
+      gridDef:'0.25', exCellDef:'1', exMinDef:'10', exLblDef:'10'},
+  ft:{lab:'ft',vdiv:27,vlab:'yd³',aper:43560,alab:'ac', alab2:'ft²',
+      grid:['0.5','1','2','5'], exCell:['1','2','5','10'],
+      exMin:['0','50','100','250','500'], exLbl:['20','30','50','100'],
+      gridDef:'1', exCellDef:'2', exMinDef:'100', exLblDef:'30'}
+};
+function U(){return UNITS[S.units];}
 const f2=v=>v.toLocaleString(undefined,{maximumFractionDigits:0});
-const m3=v=>f2(Math.round(v))+' m³';
+const m3=v=>f2(Math.round(v/U().vdiv))+' '+U().vlab;
+/** area, stepping up to hectares or acres once the number gets long */
+const a2=v=>{const u=U();return v>u.aper?(v/u.aper).toFixed(2)+' '+u.alab:f2(Math.round(v))+' '+u.alab2;};
+/** a level or a difference, in whatever the file is measured in */
+const lz=(v,dp)=>v.toFixed(dp===undefined?2:dp)+' '+U().lab;
 function drawSurfList(){
   const box=$('slist');box.innerHTML='';
   S.surfs.forEach((s,i)=>{
@@ -559,7 +719,7 @@ function drawSurfList(){
     d.innerHTML=
       `<div class="nm"><span class="sw" style="background:${s.col}"></span>${s.name}</div>`+
       `<div class="meta">${f2(s.nP)}${T(' points, ')}${f2(s.nF)}${T(' triangles')}<br>`+
-      `${T('plan area')} ${f2(Math.round(s.planA))} m² · ${T('elevation')} ${s.bb.z0.toFixed(2)}–${s.bb.z1.toFixed(2)} m</div>`+
+      `${T('plan area')} ${a2(s.planA)} · ${T('elevation')} ${s.bb.z0.toFixed(2)}–${lz(s.bb.z1)}</div>`+
       `<div class="roles">
          <button class="${S.base===i?'on':''}" data-role="base" data-i="${i}">${T('Base')}</button>
          <button class="${S.comp===i?'on':''}" data-role="comp" data-i="${i}">${T('Comparison')}</button>
@@ -589,34 +749,61 @@ function drawSurfList(){
     const s=S.surfs[+inp.dataset.offin];s.off=+inp.value||0;recompute();
   });
 }
+/** One boundary shared by two bands. Editing either side moves the same
+    edge, so the bands always meet — a gap between them would just be
+    ground the map refuses to colour. */
+function setEdge(k,v){
+  const n=S.bands.length;
+  if(k<1||k>=n)return;
+  const lo=S.bands[k-1].min, hi=S.bands[k].max;
+  v=Math.min(Math.max(r1(v),r1(lo)+0.1),r1(hi)-0.1);
+  S.bands[k-1].max=v; S.bands[k].min=v;
+}
 function drawBands(){
+  lockEnds();
   const vols=bandVolumes();
+  const last=S.bands.length-1;
+  const lock=T('Set by the comparison — the largest difference measured between the two surfaces');
   const tb=$('bands').querySelector('tbody');tb.innerHTML='';
   S.bands.forEach((b,i)=>{
+    const cell=(v,k,locked)=>locked
+      ? `<td class="num"><input type="number" value="${v.toFixed(1)}" style="width:52px" disabled title="${lock}"></td>`
+      : `<td class="num"><input type="number" step="0.1" value="${v.toFixed(1)}" data-e="${k}" style="width:52px"></td>`;
     const tr=document.createElement('tr');
     tr.innerHTML=
       `<td><input type="color" value="${b.col}" data-c="${i}"></td>`+
-      `<td class="num"><input type="number" step="0.05" value="${b.min.toFixed(2)}" data-mn="${i}" style="width:58px"></td>`+
-      `<td class="num"><input type="number" step="0.05" value="${b.max.toFixed(2)}" data-mx="${i}" style="width:58px"></td>`+
+      cell(b.min,i  ,i===0)+
+      cell(b.max,i+1,i===last)+
       `<td class="num">${S.grids?m3(vols[i]):'—'}</td>`+
-      `<td><button class="sm" data-del="${i}" style="padding:1px 5px">×</button></td>`;
+      `<td><button class="sm" data-del="${i}" style="padding:1px 5px">&times;</button></td>`;
     tb.appendChild(tr);
   });
   tb.querySelectorAll('[data-c]').forEach(c=>c.oninput=()=>{DIFFDIRTY=true;S.bands[+c.dataset.c].col=c.value;draw();});
-  tb.querySelectorAll('[data-mn]').forEach(c=>c.onchange=()=>{DIFFDIRTY=true;S.bands[+c.dataset.mn].min=+c.value;drawBands();draw();});
-  tb.querySelectorAll('[data-mx]').forEach(c=>c.onchange=()=>{DIFFDIRTY=true;S.bands[+c.dataset.mx].max=+c.value;drawBands();draw();});
-  tb.querySelectorAll('[data-del]').forEach(c=>c.onclick=()=>{DIFFDIRTY=true;S.bands.splice(+c.dataset.del,1);drawBands();draw();});
+  tb.querySelectorAll('[data-e]').forEach(c=>c.onchange=()=>{
+    DIFFDIRTY=true;setEdge(+c.dataset.e,+c.value);drawBands();draw();});
+  tb.querySelectorAll('[data-del]').forEach(c=>c.onclick=()=>{
+    const i=+c.dataset.del, n=S.bands.length;
+    if(n<2){msg('At least one band is needed',true);return;}
+    /* the gap the band leaves is split between the two either side, so
+       neither neighbour silently swallows the whole of it */
+    if(i>0&&i<n-1){
+      const mid=r1((S.bands[i].min+S.bands[i].max)/2);
+      S.bands[i-1].max=mid; S.bands[i+1].min=mid;
+    }else if(i===0){ S.bands[1].min=S.bands[0].min; }
+    else          { S.bands[n-2].max=S.bands[n-1].max; }
+    DIFFDIRTY=true;S.bands.splice(i,1);lockEnds();drawBands();draw();});
 }
+
 function showVol(){
   const v=S.vol;
   if(!v){$('vcut').textContent=$('vfill').textContent=$('vnet').textContent=$('varea').textContent='—';$('conv').textContent='';return;}
   $('vcut').textContent=m3(v.cut);
   $('vfill').textContent=m3(v.fill);
   $('vnet').textContent=(v.net>=0?'+':'−')+m3(Math.abs(v.net));
-  $('varea').textContent=f2(Math.round(v.area))+' m²';
+  $('varea').textContent=a2(v.area);
   const c=S.volCoarse;
   const diff=Math.abs(v.net-c.net), rel=Math.abs(v.net)>1?diff/Math.abs(v.net)*100:0;
-  $('conv').textContent=T('at ')+S.grids.fine.g.cell+' m: '+m3(v.net)+'  ·  '+S.grids.coarse.g.cell+' m: '+m3(c.net)+
+  $('conv').textContent=T('at ')+lz(S.grids.fine.g.cell)+': '+m3(v.net)+'  ·  '+lz(S.grids.coarse.g.cell)+': '+m3(c.net)+
     '  ('+rel.toFixed(1)+'%)  ·  '+S.ms+' ms';
 }
 
@@ -739,7 +926,7 @@ function drawDiff(){
   const {cv:img,g}=DIFFIMG, s=S.v2.s, ox=S.v2.ox, oy=S.v2.oy;
   cx.imageSmoothingEnabled=false;
   cx.drawImage(img, g.x0*s+ox, oy-(g.y0+g.ny*g.cell)*s, g.nx*g.cell*s, g.ny*g.cell*s);
-  $('read').textContent=g.cell+' m'+T(' grid')+'  ·  '+g.nx+'×'+g.ny;
+  $('read').textContent=lz(g.cell)+T(' grid')+'  ·  '+g.nx+'×'+g.ny;
 }
 function splash(){
   cx.fillStyle='#5d6773';cx.font='13px system-ui';cx.textAlign='center';
@@ -750,12 +937,162 @@ function splash(){
 function draw(){
   cx.clearRect(0,0,W,H);
   cx.fillStyle='#0c1015';cx.fillRect(0,0,W,H);
-  if(S.mode==='3d')draw3D();else{drawDiff();drawRegions();}
+  if(S.mode==='3d')draw3D();else{drawDiff();drawRegions();drawCutLine();}
+}
+
+/* ─────────────── section checker ───────────────
+   Four lines to read against each other: each surface as it arrived, and
+   each surface at the level change you have applied to it. When an offset
+   is zero the two coincide, which is itself worth seeing. */
+const scv=$('scv'), sx2=scv.getContext('2d');
+/* base = grass green then stripped green; comparison = brown then yellow */
+const SC={a:'#2E7D32', ao:'#6EE787', b:'#B5651D', bo:'#FFD166'};
+
+/** The cut line, marked the way a section is drawn on a plan: green at the
+    start, red at the end, arrows showing which way you are looking. */
+function drawCutLine(){
+  const P=S.sect||(S.sectA?{ax:S.sectA.x,ay:S.sectA.y,bx:S.sectA.x,by:S.sectA.y}:null);
+  if(!P)return;
+  const s=S.v2.s,ox=S.v2.ox,oy=S.v2.oy;
+  const a={x:P.ax*s+ox,y:oy-P.ay*s}, b={x:P.bx*s+ox,y:oy-P.by*s};
+  const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
+  if(L>2){
+    cx.setLineDash([9,6]);cx.strokeStyle='#ffffffcc';cx.lineWidth=1.8;
+    cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();cx.setLineDash([]);
+    const head=(px,py,sx,sy)=>{
+      cx.beginPath();cx.moveTo(px,py);
+      cx.lineTo(px-sx*13-sy*6,py-sy*13+sx*6);
+      cx.lineTo(px-sx*13+sy*6,py-sy*13-sx*6);
+      cx.closePath();cx.fill();
+    };
+    cx.fillStyle='#ffffff';
+    head(a.x-ux*10,a.y-uy*10,-ux,-uy);
+    head(b.x+ux*10,b.y+uy*10, ux, uy);
+  }
+  [[a,'#4ad66d'],[b,'#e0553b']].forEach(([q,c])=>{
+    cx.fillStyle=c;cx.beginPath();cx.arc(q.x,q.y,6,0,6.2832);cx.fill();
+    cx.strokeStyle='#0b0f14';cx.lineWidth=1.6;cx.stroke();
+  });
+}
+
+/** Bilinear sample off a rasterised grid. NaN anywhere in the cell means
+    the section has run off the surface, and the line simply breaks. */
+function sampleGrid(arr,g,x,y){
+  const fx=(x-g.x0)/g.cell, fy=(y-g.y0)/g.cell;
+  if(fx<0||fy<0||fx>g.nx-1||fy>g.ny-1)return NaN;
+  const i=Math.min(g.nx-2,Math.floor(fx)), j=Math.min(g.ny-2,Math.floor(fy));
+  const u=fx-i, v=fy-j;
+  const a=arr[j*g.nx+i],b=arr[j*g.nx+i+1],c=arr[(j+1)*g.nx+i],d=arr[(j+1)*g.nx+i+1];
+  return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;
+}
+function sectionData(){
+  if(!S.sect||!S.grids)return null;
+  const {ax,ay,bx,by}=S.sect;
+  const L=Math.hypot(bx-ax,by-ay);
+  const {g,a,b}=S.grids.fine;
+  if(L<g.cell)return null;
+  const step=Math.max(g.cell/2,L/600), n=Math.max(2,Math.ceil(L/step));
+  const oA=S.surfs[S.base].off, oB=S.surfs[S.comp].off;
+  const ch=[],za=[],zb=[],zao=[],zbo=[];
+  for(let k=0;k<=n;k++){
+    const t=k/n, x=ax+(bx-ax)*t, y=ay+(by-ay)*t;
+    const va=sampleGrid(a,g,x,y), vb=sampleGrid(b,g,x,y);
+    ch.push(L*t); za.push(va); zb.push(vb); zao.push(va+oA); zbo.push(vb+oB);
+  }
+  return {L,ch,a:za,b:zb,ao:zao,bo:zbo,oA,oB};
+}
+function drawSection(){
+  const box=$('sect');
+  if(!S.sect){box.classList.add('hide');$('read').style.bottom=$('msg').style.bottom='9px';return;}
+  box.classList.remove('hide');
+  const lift=(box.offsetHeight||216)+10+'px';
+  $('read').style.bottom=$('msg').style.bottom=lift;
+  const d=sectionData(); if(!d)return;
+  const dpr=Math.min(2,devicePixelRatio||1);
+  const w=scv.clientWidth,h=scv.clientHeight;
+  if(!w||!h)return;
+  scv.width=w*dpr;scv.height=h*dpr;sx2.setTransform(dpr,0,0,dpr,0,0);
+  sx2.clearRect(0,0,w,h);
+  const on=S.sShow, sets=[];
+  if(on.a)sets.push(d.a); if(on.ao)sets.push(d.ao);
+  if(on.b)sets.push(d.b); if(on.bo)sets.push(d.bo);
+  const flat=[];for(const arr of sets)for(const v of arr)if(v===v)flat.push(v);
+  if(!flat.length){
+    sx2.fillStyle='#5d6773';sx2.font='12px '+getComputedStyle(document.body).fontFamily;
+    sx2.textAlign='center';sx2.fillText(T('Tick a surface to see it'),w/2,h/2);sx2.textAlign='left';return;}
+  let lo=Math.min(...flat), hi=Math.max(...flat);
+  const pad=Math.max(0.25,(hi-lo)*0.15); lo-=pad; hi+=pad;
+  const ml=54,mr=12,mt=8,mb=20;
+  const X=c=>ml+(c/d.L)*(w-ml-mr), Y=z=>h-mb-((z-lo)/(hi-lo))*(h-mt-mb);
+  const span=hi-lo, tick=span>20?5:span>8?2:span>4?1:span>1.6?0.5:0.25;
+  sx2.font='10px ui-monospace,monospace';
+  for(let z=Math.ceil(lo/tick)*tick;z<=hi;z+=tick){
+    const y=Y(z);
+    sx2.strokeStyle='#1e2731';sx2.lineWidth=1;
+    sx2.beginPath();sx2.moveTo(ml,y);sx2.lineTo(w-mr,y);sx2.stroke();
+    sx2.fillStyle='#6d7885';sx2.textAlign='right';sx2.fillText(z.toFixed(2),ml-6,y+3);
+  }
+  const cst=d.L>200?50:d.L>80?20:d.L>30?10:5;
+  sx2.textAlign='center';
+  for(let c=0;c<=d.L;c+=cst){
+    const x=X(c);
+    sx2.strokeStyle='#1a222c';sx2.beginPath();sx2.moveTo(x,mt);sx2.lineTo(x,h-mb);sx2.stroke();
+    sx2.fillStyle='#6d7885';sx2.fillText(c.toFixed(0),x,h-6);
+  }
+  sx2.textAlign='left';
+  const line=(arr,col,wid,dash)=>{
+    sx2.strokeStyle=col;sx2.lineWidth=wid;sx2.setLineDash(dash||[]);
+    sx2.beginPath();let pen=false;
+    arr.forEach((z,k)=>{
+      if(z!==z){pen=false;return;}                 // gap where the surface ends
+      const px=X(d.ch[k]),py=Y(z);
+      pen?sx2.lineTo(px,py):sx2.moveTo(px,py);pen=true;
+    });
+    sx2.stroke();sx2.setLineDash([]);
+  };
+  /* the two adjusted lines are what the volume is actually measured between,
+     so they are hatched against each other */
+  if(on.ao&&on.bo){
+    for(let k=1;k<d.ch.length;k++){
+      const p=d.ao[k],q=d.bo[k],p0=d.ao[k-1],q0=d.bo[k-1];
+      if(p!==p||q!==q||p0!==p0||q0!==q0)continue;
+      const dz=q-p; if(Math.abs(dz)<0.005)continue;
+      sx2.fillStyle=dz<0?'rgba(232,131,107,.20)':'rgba(111,195,245,.20)';
+      sx2.beginPath();
+      sx2.moveTo(X(d.ch[k-1]),Y(p0));sx2.lineTo(X(d.ch[k]),Y(p));
+      sx2.lineTo(X(d.ch[k]),Y(q));sx2.lineTo(X(d.ch[k-1]),Y(q0));
+      sx2.closePath();sx2.fill();
+    }
+  }
+  /* Continuous is the surface as it arrived; dashed is the surface with
+     your level change on it. Greens are the base surface, browns and
+     yellows the comparison. */
+  if(on.a) line(d.a ,SC.a ,1.6);
+  if(on.ao)line(d.ao,SC.ao,1.6,[6,4]);
+  if(on.b) line(d.b ,SC.b ,1.6);
+  if(on.bo)line(d.bo,SC.bo,1.6,[6,4]);
+  $('sectInfo').textContent=lz(d.L,1)+'   ·   '+d.ch.length+' pts   ·   '+lo.toFixed(2)+'–'+lz(hi);
+}
+addEventListener('resize',()=>{if(S.sect)drawSection();});
+/** Keep the strip labels honest about which surface is which. */
+function sectLabels(){
+  const A=S.surfs[S.base],B=S.surfs[S.comp];
+  $('sAlab').textContent =A?A.name:T('Base');
+  $('sAolab').textContent=A?A.name+' '+T('adjusted'):T('Base adjusted');
+  $('sBlab').textContent =B?B.name:T('Comparison');
+  $('sBolab').textContent=B?B.name+' '+T('adjusted'):T('Comparison adjusted');
 }
 
 /* ───────────────────── interaction ───────────────────── */
 let drag=null;
 cv.addEventListener('pointerdown',e=>{
+  if(S.tool==='sect'&&S.mode==='diff'&&e.button===0){
+    const x=(e.offsetX-S.v2.ox)/S.v2.s, y=(S.v2.oy-e.offsetY)/S.v2.s;
+    if(!S.sectA){S.sectA={x,y};msg('Now click the far end of the section');draw();return;}
+    S.sect={ax:S.sectA.x,ay:S.sectA.y,bx:x,by:y};S.sectA=null;
+    setTool('pan');sectLabels();drawSection();draw();msg('Section cut');
+    return;
+  }
   if(S.drawing&&S.mode==='diff'&&e.button===0){
     S.drawing.push({x:(e.offsetX-S.v2.ox)/S.v2.s, y:(S.v2.oy-e.offsetY)/S.v2.s});
     if(e.detail>=2)finishRegion(); else draw();
@@ -800,11 +1137,11 @@ function hoverDiff(sx,sy){
   const {g,a,b}=S.grids.coarse;
   const x=(sx-S.v2.ox)/S.v2.s, y=(S.v2.oy-sy)/S.v2.s;
   const i=Math.floor((x-g.x0)/g.cell), j=Math.floor((y-g.y0)/g.cell);
-  if(i<0||j<0||i>=g.nx||j>=g.ny){$('read').textContent=g.cell+' m'+T(' grid');return;}
+  if(i<0||j<0||i>=g.nx||j>=g.ny){$('read').textContent=lz(g.cell)+T(' grid');return;}
   const za=a[j*g.nx+i],zb=b[j*g.nx+i];
-  if(za!==za||zb!==zb){$('read').textContent=g.cell+' m'+T(' grid');return;}
+  if(za!==za||zb!==zb){$('read').textContent=lz(g.cell)+T(' grid');return;}
   const d=(zb+S.surfs[S.comp].off)-(za+S.surfs[S.base].off);
-  $('read').textContent=T('Difference at cursor')+': '+(d>=0?'+':'−')+Math.abs(d).toFixed(2)+' m';
+  $('read').textContent=T('Difference at cursor')+': '+(d>=0?'+':'−')+lz(Math.abs(d));
 }
 
 /* ───────────────────── file loading ───────────────────── */
@@ -830,7 +1167,6 @@ function addFiles(list){
 function afterLoad(){
   if(S.base<0&&S.surfs.length)S.base=0;
   if(S.comp<0&&S.surfs.length>1)S.comp=1;
-  $('stat').textContent=S.surfs.length+' '+T(S.surfs.length===1?'surface':'surfaces');
   $('drop').classList.toggle('hide',S.surfs.length>0);
   drawSurfList();fitView();recompute();
 }
@@ -852,26 +1188,23 @@ $('wire').onchange=e=>{S.wire=e.target.checked;draw();};
 $('shade').onchange=e=>{S.shade=e.target.checked;draw();};
 $('fitview').onclick=fitView;
 $('bAdd').onclick=()=>{
-  const last=S.bands[S.bands.length-1];
-  S.bands.splice(S.bands.length-1,0,{min:last.min,max:last.min+0.5,col:'#94a3b8'});
+  const n=S.bands.length, last=S.bands[n-1];
+  const mid=r1((last.min+last.max)/2);
+  if(mid<=last.min||mid>=last.max){msg('The last band is too narrow to split',true);return;}
+  S.bands.splice(n-1,0,{min:last.min,max:mid,col:last.col});
+  last.min=mid;
   DIFFDIRTY=true;drawBands();draw();
 };
 $('bFit').onclick=()=>fitBands(false);
-$('t3d').onclick=()=>{S.mode='3d';$('t3d').classList.add('on');$('tdiff').classList.remove('on');draw();};
+$('t3d').onclick=()=>{S.mode='3d';if(S.tool!=='pan')setTool('pan');$('t3d').classList.add('on');$('tdiff').classList.remove('on');draw();};
 $('tdiff').onclick=()=>{S.mode='diff';$('tdiff').classList.add('on');$('t3d').classList.remove('on');draw();};
-$('balance').onclick=()=>{
-  if(!S.grids){msg('Load two surfaces first',true);return;}
-  const {g,a,b}=S.grids.fine, A=S.surfs[S.base], B=S.surfs[S.comp];
-  const net=o=>volumeOn(g,a,b,A.off,o).net;
-  let lo=B.off-20,hi=B.off+20;
-  if(net(lo)>0||net(hi)<0){msg('Cut and fill cannot be balanced within ±20 m',true);return;}
-  for(let k=0;k<60;k++){const mid=(lo+hi)/2;if(net(mid)>0)hi=mid;else lo=mid;}
-  B.off=+((lo+hi)/2).toFixed(3);
-  drawSurfList();recompute();
-  msg('Balanced at an offset of '+B.off.toFixed(3)+' m'+
-      (Math.abs(S.vol.net)>1?' — net '+Math.round(S.vol.net)+' m³ left by rounding the offset to 1 mm':''));
+
+$('lang').onchange=e=>{
+  applyLang(e.target.value);
+  if(typeof unitOptions==='function')unitOptions();
+  sectLabels();drawSection();
+  if(LASTMSG)msg(LASTMSG);
 };
-$('lang').onchange=e=>{applyLang(e.target.value);if(LASTMSG)msg(LASTMSG);};
 
 
 /* ══════════════════════════════════════════════════════════════════
@@ -922,7 +1255,7 @@ function drawRegionList(){
       (v?`<div class="kv"><span class="cut">${T('Cut')}</span><span>${m3(v.cut)}</span></div>
           <div class="kv"><span class="fill">${T('Fill')}</span><span>${m3(v.fill)}</span></div>
           <div class="kv"><span>${T('Net')}</span><span>${v.net>=0?'+':'−'}${m3(Math.abs(v.net))}</span></div>
-          <div class="meta">${f2(Math.round(v.area))} m² · ${r.pts.length} pts</div>`
+          <div class="meta">${a2(v.area)} · ${r.pts.length} pts</div>`
          :`<div class="meta">—</div>`);
     box.appendChild(d);
   });
@@ -933,10 +1266,10 @@ function finishRegion(){
   if(S.drawing&&S.drawing.length>=3){
     const r={name:'Region '+(S.regions.length+1),pts:S.drawing.slice()};
     r.v=regionVolume(r.pts);S.regions.push(r);
-    msg(r.name+': '+(r.v?m3(r.v.net)+' net over '+f2(Math.round(r.v.area))+' m²':'—'));
+    msg(r.name+': '+(r.v?m3(r.v.net)+T(' net over ')+a2(r.v.area):'—'));
     drawRegionList();
   }
-  S.drawing=null;draw();
+  S.drawing=null;setTool('pan');draw();
 }
 function drawRegions(){
   if(S.mode!=='diff')return;
@@ -1079,11 +1412,70 @@ function traceBand(bandGrid,nx,ny,b){
   });
 }
 
+/** Absorb islands smaller than minCells into the band that surrounds them.
+    Runs twice so a speck sitting against another speck still finds real
+    ground on the second pass. Cells with no data (-1) are never touched
+    and never used as a replacement. */
+function despeckle(bandGrid,nx,ny,minCells){
+  if(minCells<2)return 0;
+  const n=nx*ny, comp=new Int32Array(n).fill(-1), stack=new Int32Array(n);
+  const cells=new Int32Array(n);
+  let absorbed=0;
+  for(let pass=0;pass<2;pass++){
+    comp.fill(-1);
+    let cid=0;
+    for(let seed=0;seed<n;seed++){
+      if(comp[seed]!==-1||bandGrid[seed]<0)continue;
+      const b=bandGrid[seed];
+      let sp=0,len=0; stack[sp++]=seed; comp[seed]=cid;
+      const nb=new Map();                       // neighbouring band → touching cells
+      while(sp){
+        const k=stack[--sp]; cells[len++]=k;
+        const i=k%nx, j=(k-i)/nx;
+        const step=(ii,jj)=>{
+          if(ii<0||jj<0||ii>=nx||jj>=ny)return;
+          const m=jj*nx+ii, v=bandGrid[m];
+          if(v===b){ if(comp[m]===-1){comp[m]=cid;stack[sp++]=m;} }
+          else if(v>=0) nb.set(v,(nb.get(v)||0)+1);
+        };
+        step(i-1,j);step(i+1,j);step(i,j-1);step(i,j+1);
+      }
+      cid++;
+      if(len>=minCells||!nb.size)continue;
+      let best=-1,bestN=-1;
+      for(const [v,c] of nb)if(c>bestN){bestN=c;best=v;}
+      for(let k=0;k<len;k++)bandGrid[cells[k]]=best;
+      absorbed+=len;
+    }
+  }
+  return absorbed;
+}
+
+/* One layer per band, written into the LAYER table so entities can sit
+   ByLayer. That drops a true-colour group off every entity and, more to
+   the point, lets you freeze or isolate a single band in CAD.          */
+function dxfPrefix(bandLayers){
+  const rec=(name,handle,col)=>
+    "  0\nLAYER\n  5\n"+handle+"\n330\n1\n100\nAcDbSymbolTableRecord\n"+
+    "100\nAcDbLayerTableRecord\n  2\n"+name+"\n 70\n0\n 62\n7\n  6\nContinuous\n"+
+    "370\n-3\n390\n13\n420\n"+col+"\n";
+  let add='',h=0x1000;
+  for(const L of bandLayers)add+=rec(L.name,(h++).toString(16).toUpperCase(),String(L.col));
+  const head="  0\nTABLE\n  2\nLAYER\n  5\n1\n330\n0\n100\nAcDbSymbolTable\n 70\n6\n";
+  const cut=DXF_PRE.indexOf(head);
+  if(cut<0)return DXF_PRE;                       // skeleton changed — fail soft
+  const end=DXF_PRE.indexOf("  0\nENDTAB\n",cut);
+  return DXF_PRE.slice(0,cut)
+       + head.replace("\n 70\n6\n","\n 70\n"+(6+bandLayers.length)+"\n")
+       + DXF_PRE.slice(cut+head.length,end) + add + DXF_PRE.slice(end);
+}
+
 function exportDXF(){
   if(!S.grids){msg('Load two surfaces first',true);return;}
   const A=S.surfs[S.base],B=S.surfs[S.comp];
   const bb=commonBB(A,B);
-  const cell=+$('exCell').value, lbl=+$('exLbl').value;
+  const cell=+$('exCell').value, minArea=+$('exMin').value;
+  let lbl=+$('exLbl').value;
   const style=$('exStyle').value;
   const g=makeGrid(bb,cell), za=rasterise(A,g), zb=rasterise(B,g);
   const oA=A.off,oB=B.off;
@@ -1096,28 +1488,32 @@ function exportDXF(){
     if(col!==undefined)G(420,String(col));   // true colour (R2004 and later)
   };
   const rgb=hex=>parseInt(hex.slice(1),16);
+  /* Coordinates land on the export lattice, so millimetres were never real
+     precision — 2 dp with the trailing zeros stripped writes the same
+     geometry in a good deal less text. */
+  const N=v=>{const t=(Math.round(v*100)/100).toString();return t.indexOf('.')<0?t+'.0':t;};
   const lx=bb.x1+Math.max(10,(bb.x1-bb.x0)*0.06), sw=Math.max(2,(bb.y1-bb.y0)*0.02);
   const lth=sw*0.7;
 
   const text=(layer,x,y,ht,t,centre)=>{
     head('TEXT',layer);
     G(100,'AcDbText');
-    G(10,x.toFixed(3));G(20,y.toFixed(3));G(30,'0.0');G(40,ht.toFixed(3));G(1,t);
-    if(centre){G(72,'1');G(11,x.toFixed(3));G(21,y.toFixed(3));G(31,'0.0');}
+    G(10,N(x));G(20,N(y));G(30,'0.0');G(40,N(ht));G(1,t);
+    if(centre){G(72,'1');G(11,N(x));G(21,N(y));G(31,'0.0');}
     G(100,'AcDbText');G(73,'0');
   };
   const lwpoly=(layer,pts,col,closed)=>{
     head('LWPOLYLINE',layer,col);
     G(100,'AcDbPolyline');G(90,String(pts.length));G(70,closed?'1':'0');G(43,'0.0');
-    for(const p of pts){G(10,p.x.toFixed(3));G(20,p.y.toFixed(3));}
+    for(const p of pts){G(10,N(p.x));G(20,N(p.y));}
   };
   const solid=(layer,col,x0,y0,x1,y1)=>{
     head('SOLID',layer,col);
     G(100,'AcDbTrace');
-    G(10,x0.toFixed(3));G(20,y0.toFixed(3));G(30,'0.0');
-    G(11,x1.toFixed(3));G(21,y0.toFixed(3));G(31,'0.0');
-    G(12,x0.toFixed(3));G(22,y1.toFixed(3));G(32,'0.0');
-    G(13,x1.toFixed(3));G(23,y1.toFixed(3));G(33,'0.0');
+    G(10,N(x0));G(20,N(y0));G(30,'0.0');
+    G(11,N(x1));G(21,N(y0));G(31,'0.0');
+    G(12,N(x0));G(22,N(y1));G(32,'0.0');
+    G(13,N(x1));G(23,N(y1));G(33,'0.0');
   };
   const hatch=(layer,col,loops)=>{
     head('HATCH',layer,col);
@@ -1128,7 +1524,7 @@ function exportDXF(){
     G(91,String(loops.length));
     for(const L of loops){
       G(92,'3');G(72,'0');G(73,'1');G(93,String(L.length));
-      for(const p of L){G(10,p.x.toFixed(3));G(20,p.y.toFixed(3));}
+      for(const p of L){G(10,N(p.x));G(20,N(p.y));}
       G(97,'0');
     }
     G(75,'0');G(76,'1');G(98,'0');
@@ -1142,11 +1538,19 @@ function exportDXF(){
     if(a!==a||b2!==b2)continue;
     bandGrid[k]=bandOf((b2+oB)-(a+oA));
   }
+  let live=0;for(let k=0;k<bandGrid.length;k++)if(bandGrid[k]>=0)live++;
+  const absorbed=despeckle(bandGrid,g.nx,g.ny,Math.round(minArea/(cell*cell)));
+  const noisy=live&&absorbed/live>0.25;   // most of the map was specks
+
+  const pad=n=>(n<10?'0':'')+n;
+  const bandLayer=b=>'DIFF-B'+pad(b+1);
+  const layers=S.bands.map((bd,b)=>({name:bandLayer(b),col:rgb(bd.col)}));
+
   if(style==='cells'){
     for(let j=0;j<g.ny;j++){
       let st=-1,bd=-2;
       const flush=iEnd=>{if(st<0||bd<0)return;
-        solid('DIFF-COLOUR',rgb(S.bands[bd].col),g.x0+st*cell,g.y0+j*cell,g.x0+(iEnd+1)*cell,g.y0+(j+1)*cell);fills++;};
+        solid(bandLayer(bd),undefined,g.x0+st*cell,g.y0+j*cell,g.x0+(iEnd+1)*cell,g.y0+(j+1)*cell);fills++;};
       for(let i=0;i<g.nx;i++){
         const bi=bandGrid[j*g.nx+i];
         if(bi!==bd){flush(i-1);st=bi>=0?i:-1;bd=bi;}
@@ -1158,12 +1562,19 @@ function exportDXF(){
       const loops=traceBand(bandGrid,g.nx,g.ny,b);
       if(!loops.length)continue;
       const world=loops.map(L=>L.map(p=>({x:g.x0+p.x*cell, y:g.y0+p.y*cell})));
-      hatch('DIFF-COLOUR',rgb(S.bands[b].col),world);fills++;
-      for(const L of world){lwpoly('DIFF-COLOUR',L,rgb(S.bands[b].col),true);outlines++;}
+      /* The HATCH carries its own boundary, so a matching LWPOLYLINE on the
+         same layer was the same geometry written a second time. Gone. */
+      hatch(bandLayer(b),undefined,world);fills++;outlines+=world.length;
     }
   }
 
   /* ── difference labels on their own, coarser grid ── */
+  /* Text is the heaviest thing in the file per unit of use: 10,000 labels
+     on a 1 km site is 1.8 MB nobody will ever read. Step the spacing up
+     until the count is sane, and say so. */
+  const LBLCAP=2500;
+  let eased=false;
+  while(((bb.x1-bb.x0)/lbl)*((bb.y1-bb.y0)/lbl)>LBLCAP){lbl*=2;eased=true;}
   const gl=makeGrid(bb,lbl), la=rasterise(A,gl), lb=rasterise(B,gl);
   const th=Math.max(0.4,lbl/12);
   let labels=0;
@@ -1179,12 +1590,14 @@ function exportDXF(){
   const vols=bandVolumes();
   let ly=bb.y1;
   text('DIFF-LEGEND',lx,ly,lth*1.5,A.name+' to '+B.name); ly-=sw*2;
-  text('DIFF-LEGEND',lx,ly,lth,'Cut '+Math.round(S.vol.cut)+' m3   Fill '+Math.round(S.vol.fill)+
-       ' m3   Net '+Math.round(S.vol.net)+' m3'); ly-=sw*2;
+  const VU=U().vlab.replace('³','3'), VD=U().vdiv;
+  const vtx=v=>Math.round(v/VD)+' '+VU;
+  text('DIFF-LEGEND',lx,ly,lth,'Cut '+vtx(S.vol.cut)+'   Fill '+vtx(S.vol.fill)+
+       '   Net '+vtx(S.vol.net)); ly-=sw*2;
   S.bands.forEach((bd,i)=>{
     solid('DIFF-LEGEND',rgb(bd.col),lx,ly,lx+sw,ly+sw);
     text('DIFF-LEGEND',lx+sw*1.4,ly+sw*0.15,lth,
-         bd.min.toFixed(2)+' to '+bd.max.toFixed(2)+' m    '+Math.round(vols[i])+' m3');
+         bd.min.toFixed(2)+' to '+bd.max.toFixed(2)+' '+U().lab+'    '+vtx(vols[i]));
     ly-=sw*1.35;
   });
 
@@ -1192,20 +1605,30 @@ function exportDXF(){
   for(const r of S.regions){
     lwpoly('REGIONS',r.pts,undefined,true);
     const c=r.pts.reduce((a,pt)=>({x:a.x+pt.x/r.pts.length,y:a.y+pt.y/r.pts.length}),{x:0,y:0});
-    text('REGIONS',c.x,c.y,lth,r.name+(r.v?'  net '+Math.round(r.v.net)+' m3':''),true);
+    text('REGIONS',c.x,c.y,lth,r.name+(r.v?'  net '+vtx(r.v.net):''),true);
   }
 
   let body='';for(let i=0;i<o.length;i+=2)body+=String(o[i]).padStart(3,' ')+'\n'+o[i+1]+'\n';
-  save(dxfSafe(A.name+'-to-'+B.name)+'.dxf',DXF_PRE+body+DXF_SUF,'application/dxf');
-  msg('DXF written — '+fills+(style==='cells'?' coloured cells, ':' hatched bands, ')+
-      outlines+' outlines, '+labels+' labels, '+S.regions.length+' regions');
+  const txt=dxfPrefix(layers)+body+DXF_SUF;
+  save(dxfSafe(A.name+'-to-'+B.name)+'.dxf',txt,'application/dxf');
+  const mb=(txt.length/1048576).toFixed(2);
+  msg('DXF written, '+mb+' MB — '+fills+(style==='cells'?' coloured cells':' hatched bands')+
+      ', '+labels+' labels, '+S.regions.length+' regions'+
+      (absorbed?'. '+absorbed+' speck cells absorbed':'')+
+      (eased?'. Label spacing eased to '+lbl+' m to keep the file workable':'')+
+      (noisy?'. Most of the map was specks — the difference here is close to survey noise, so read the colours as a trend, not a boundary':''),
+      noisy||(style==='cells'&&fills>20000));
 }
 
 /* ── LandXML out: the difference itself, as a surface ── */
 function exportDiffXML(){
   if(!S.grids){msg('Load two surfaces first',true);return;}
   const A=S.surfs[S.base],B=S.surfs[S.comp];
-  const {g,a,b}=S.grids.coarse, oA=A.off,oB=B.off;
+  /* Its own grid. Riding the display grid meant a fine colour map quietly
+     turned into a hundred-megabyte surface nobody asked for. */
+  const bb=commonBB(A,B); if(!bb){msg('The two surfaces do not overlap',true);return;}
+  const g=makeGrid(bb,+$('exSurf').value), a=rasterise(A,g), b=rasterise(B,g);
+  const oA=A.off,oB=B.off;
   const id=new Int32Array(g.nx*g.ny).fill(-1);
   const P=[];
   for(let j=0;j<g.ny;j++)for(let i=0;i<g.nx;i++){
@@ -1223,8 +1646,10 @@ function exportDiffXML(){
   }
   const d=new Date().toISOString();
   let x='<?xml version="1.0"?>\n<LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" version="1.2" date="'+d.slice(0,10)+'" time="'+d.slice(11,19)+'">\n'+
-    '<Units><Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter"/></Units>\n'+
-    '<Application name="Surface Solver" version="2.0"/>\n'+
+    '<Units>'+(S.units==='ft'
+       ? '<Imperial linearUnit="foot" areaUnit="squareFoot" volumeUnit="cubicFeet" temperatureUnit="fahrenheit" pressureUnit="inHG"/>'
+       : '<Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter" temperatureUnit="celsius" pressureUnit="milliBars"/>')+'</Units>\n'+
+    '<Application name="Volume Solver" version="2.5"/>\n'+
     '<Surfaces><Surface name="'+A.name+' to '+B.name+' difference"><Definition surfType="TIN">\n<Pnts>\n';
   P.forEach((p,i)=>{x+='<P id="'+(i+1)+'">'+p[0].toFixed(4)+' '+p[1].toFixed(4)+' '+p[2].toFixed(4)+'</P>\n';});
   x+='</Pnts>\n<Faces>\n';
@@ -1241,8 +1666,27 @@ function save(name,text,mime){
 }
 
 /* ── wiring ── */
+function setTool(t){
+  S.tool=t;
+  if(t!=='sect')S.sectA=null;
+  if(t!=='region')S.drawing=null;
+  $('tSect').classList.toggle('on',t==='sect');
+  $('rDraw').classList.toggle('on',t==='region');
+  draw();
+}
+$('tSect').onclick=()=>{
+  if(!S.grids){msg('Load two surfaces first',true);return;}
+  if(S.mode!=='diff')$('tdiff').click();
+  if(S.tool==='sect'){setTool('pan');msg('Section tool off');return;}
+  setTool('sect');msg('Click two points to cut a section through the surfaces');
+};
+$('sectClose').onclick=()=>{S.sect=null;drawSection();draw();};
+[['sA','a'],['sAo','ao'],['sB','b'],['sBo','bo']].forEach(([id,k])=>{
+  $(id).onchange=e=>{S.sShow[k]=e.target.checked?1:0;drawSection();};
+});
 $('rDraw').onclick=()=>{
   if(S.mode!=='diff'){$('tdiff').click();}
+  setTool('region');
   S.drawing=[];msg('Click each corner of the region, Enter to close it, Esc to abandon');draw();
 };
 $('rImport').onclick=()=>$('rFile').click();
@@ -1264,13 +1708,48 @@ $('rFile').onchange=e=>{
 $('exDXF').onclick=exportDXF;
 $('exXML').onclick=exportDiffXML;
 addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&S.tool==='sect'){setTool('pan');msg('Section tool off');return;}
   if(!S.drawing)return;
   if(e.key==='Enter'){finishRegion();}
-  else if(e.key==='Escape'){S.drawing=null;msg('Region abandoned');draw();}
+  else if(e.key==='Escape'){S.drawing=null;setTool('pan');msg('Region abandoned');draw();}
 });
 
 let saved='en';try{saved=localStorage.getItem('surfsolver-lang')||'en'}catch(e){}
 $('lang').value=saved;applyLang(saved);
+
+/* collapsible left-panel sections, same behaviour as the other tools */
+document.querySelectorAll('.panel section>h2').forEach(h=>
+  h.addEventListener('click',()=>h.parentElement.classList.toggle('collapsed')));
+
+/* units: declares what your files are in, relabels, never rescales */
+function relabel(sel,vals,def,suffix){
+  const el=$(sel), prev=el.value;
+  el.innerHTML=vals.map(v=>'<option value="'+v+'">'+suffix(v)+'</option>').join('');
+  el.value=vals.includes(prev)?prev:def;
+  return el.value;
+}
+/* Rebuilt options are outside applyLang's text-node snapshot, so they are
+   re-made whenever either the units or the language changes. */
+function unitOptions(){
+  const c=UNITS[S.units];
+  S.fine  =+relabel('fine'  ,c.grid  ,c.gridDef  ,v=>v+' '+c.lab);
+  S.coarse=+relabel('coarse',c.grid  ,c.gridDef  ,v=>v+' '+c.lab);
+  relabel('exCell',c.exCell,c.exCellDef,v=>v+' '+c.lab);
+  relabel('exSurf',c.exCell,c.exCellDef,v=>v+' '+c.lab);
+  relabel('exLbl' ,c.exLbl ,c.exLblDef ,v=>v+' '+c.lab);
+  relabel('exMin' ,c.exMin ,c.exMinDef ,v=>v==='0'?T('Off — keep every speck'):v+' '+c.alab2);
+  $('units').textContent=S.units==='ft'?'IMPERIAL':'METRIC';
+}
+function setUnits(u){
+  S.units=u; unitOptions();
+  if(S.grids)recompute(); else {showVol();drawBands();}
+}
+$('units').onclick=()=>{
+  setUnits(S.units==='ft'?'m':'ft');
+  msg('Working in '+(S.units==='ft'?'imperial (ft, yd³)':'metric (m, m³)')+
+      ' — this labels your data, it does not convert coordinates');
+};
+setUnits('m');
 resize();
 msg('Load a LandXML surface to begin');
 </script>
