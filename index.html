@@ -141,6 +141,7 @@ canvas.dragging{cursor:grabbing}
       <button id="tdiff" class="tool">Difference map</button>
       <span class="sep"></span>
       <button id="tSect" class="tool" title="Click two points on the difference map to cut a section">&#9986; Section</button>
+      <button id="tAng" class="tool" title="Draw a line to set which way exported labels read">&#8635; Angle</button>
     </div>
     <div class="lays">
       <label class="lay"><input type="checkbox" id="wire">Wireframe</label>
@@ -161,6 +162,7 @@ canvas.dragging{cursor:grabbing}
     <section>
       <h2>1 · Surfaces</h2>
       <div class="drop" id="drop">Drop LandXML files here<br><span style="font-size:11px">or click to choose</span></div>
+      <button class="wide" id="btnSample">Load sample</button>
       <input type="file" id="file" accept=".xml,.landxml" multiple class="hide">
       <div id="slist" style="margin-top:8px"></div>
       <p class="hint">Volume is measured from the base surface up to the comparison surface. Positive is fill, negative is cut.</p>
@@ -220,6 +222,7 @@ canvas.dragging{cursor:grabbing}
       <input type="file" id="rFile" accept=".dxf" class="hide">
       <div id="rlist" style="margin-top:7px"></div>
       <p class="hint">Draw a closed polyline on the difference map: click each corner, Enter to close it, Esc to abandon. Or bring your outlines in from a DXF.</p>
+      <p class="hint">A depth pushes the comparison surface straight down inside the boundary — a slab box, a pavement box, a landscaping strip. Where regions overlap, the one lower in this list wins.</p>
     </section>
 
     <section>
@@ -250,6 +253,11 @@ canvas.dragging{cursor:grabbing}
         <option value="0.5">0.50 m</option><option value="1" selected>1.00 m</option>
         <option value="2">2.00 m</option><option value="5">5.00 m</option>
       </select>
+      <label class="f">Label orientation</label>
+      <div class="offrow">
+        <input id="angRead" type="text" value="North (0.0°)" disabled>
+        <button id="angReset" title="Back to north">&#8630;</button>
+      </div>
       <button class="wide" id="exDXF">Export DXF — colours, table, labels</button>
       <button class="wide" id="exXML">Export difference as LandXML surface</button>
       <p class="hint">The DXF carries the coloured grid, the band table as a legend, difference labels on their own grid, and any regions. Each band gets its own layer so you can freeze it in CAD. Specks smaller than the setting above are absorbed into the band around them — on noisy survey-vs-survey work that is the difference between a readable plan and stipple.</p>
@@ -294,6 +302,21 @@ const $=id=>document.getElementById(id);
 
 /* ───────────────────────── languages ───────────────────────── */
 const TR={
+"Angle":["Ângulo","Angle","Ángulo"],
+"Draw a line to set which way exported labels read":["Desenhe uma linha para definir a direção de leitura das etiquetas exportadas","Tracez une ligne pour définir le sens de lecture des étiquettes exportées","Dibuje una línea para definir la dirección de lectura de las etiquetas exportadas"],
+"Label orientation":["Orientação das etiquetas","Orientation des étiquettes","Orientación de las etiquetas"],
+"North (0.0°)":["Norte (0,0°)","Nord (0,0°)","Norte (0,0°)"],
+"labels":["etiquetas","étiquettes","etiquetas"],
+"Bearing ":["Azimute ","Gisement ","Azimut "],
+"Draw a line the way you want exported text to read":["Desenhe uma linha na direção em que quer que o texto exportado se leia","Tracez une ligne dans le sens de lecture souhaité pour le texte exporté","Dibuje una línea en la dirección en que quiere que se lea el texto exportado"],
+"Now click the far end — text will read along this line":["Agora clique na outra extremidade — o texto vai ler-se ao longo desta linha","Cliquez maintenant l'autre extrémité — le texte se lira le long de cette ligne","Ahora haga clic en el otro extremo — el texto se leerá a lo largo de esta línea"],
+"Those two points are the same — try again":["Esses dois pontos são iguais — tente de novo","Ces deux points sont identiques — réessayez","Esos dos puntos son iguales — inténtelo de nuevo"],
+"Angle tool off":["Ferramenta de ângulo do texto desligada","Outil angle du texte désactivé","Herramienta de ángulo del texto desactivada"],
+"Load sample":["Carregar exemplo","Charger l'exemple","Cargar ejemplo"],
+"Depth below surface":["Profundidade abaixo da superfície","Profondeur sous la surface","Profundidad bajo la superficie"],
+"Partly overridden by a region below":["Parcialmente substituída por uma região abaixo","Partiellement remplacée par une région ci-dessous","Parcialmente sustituida por una región de abajo"],
+"A depth pushes the comparison surface straight down inside the boundary — a slab box, a pavement box, a landscaping strip. Where regions overlap, the one lower in this list wins.":["Uma profundidade empurra a superfície de comparaçãoa direito para baixo dentro do contorno — uma caixa de laje, uma caixa de pavimento, uma faixa paisagística. Onde as regiões se sobrepõem, vence a que está mais abaixo nesta lista.","Une profondeur pousse la surface de comparaison droit vers le bas à l'intérieur du contour — un coffre de dalle, un coffre de chaussée, une bande paysagère. Là où les régions se chevauchent, celle qui est plus bas dans cette liste l'emporte.","Una profundidad empuja la superficie de comparación recta hacia abajo dentro del contorno — un cajón de losa, un cajón de pavimento, una franja de jardinería. Donde las regiones se solapan, gana la que está más abajo en esta lista."],
+"Sample site loaded — two platforms cut into sloping ground. Draw a region over a platform and give it a depth to try a pavement box.":["Local de exemplo carregado — duas plataformas escavadas em terreno inclinado. Desenhe uma região sobre uma plataforma e dê-lhe uma profundidade para testar uma caixa de pavimento.","Site d'exemple chargé — deux plateformes creusées dans un terrain en pente. Tracez une région sur une plateforme et donnez-lui une profondeur pour essayer un coffre de chaussée.","Sitio de ejemplo cargado — dos plataformas excavadas en terreno inclinado. Dibuje una región sobre una plataforma y dele una profundidad para probar un cajón de pavimento."],
 "The two surfaces do not overlap":["As duas superfícies não se sobrepõem","Les deux surfaces ne se chevauchent pas","Las dos superficies no se solapan"],
 "Set by the comparison — the largest difference measured between the two surfaces":["Definido pela comparação — a maior diferença medida entre as duas superfícies","Défini par la comparaison — le plus grand écart mesuré entre les deux surfaces","Definido por la comparación — la mayor diferencia medida entre las dos superficies"],
 "The last band is too narrow to split":["A última faixa é demasiado estreita para dividir","La dernière bande est trop étroite pour être divisée","La última franja es demasiado estrecha para dividirla"],
@@ -463,7 +486,7 @@ const S={
   base:-1, comp:-1,
   fine:1, coarse:5,
   mode:'3d', units:'m', tool:'pan',
-  sect:null, sectA:null, sShow:{a:1,ao:1,b:1,bo:1},
+  sect:null, sectA:null, textAng:0, angA:null, sShow:{a:1,ao:1,b:1,bo:1},
   vex:1, wire:false, shade:true,
   cam:{az:-0.7,el:0.5,dist:1,tx:0,ty:0,tz:0},
   v2:{s:1,ox:0,oy:0},
@@ -587,13 +610,39 @@ function rasterise(surf,g){
 }
 
 /* ───────────────────── volume ───────────────────── */
-function volumeOn(g,zA,zB,offA,offB){
+/* ── region depths ───────────────────────────────────────────────────
+   A depth is a vertical push DOWN into the comparison surface inside a
+   region boundary — a slab box, a pavement box, a landscaping strip. It
+   is a mask over the grid, not geometry, so there is no boundary TIN to
+   get wrong. Where two regions overlap the later one in the list wins,
+   and the panel shows which. */
+function regionDepthGrid(g){
+  if(!S.regions.some(r=>r.depth>0))return null;
+  const d=new Float32Array(g.nx*g.ny);
+  for(const r of S.regions){
+    if(!(r.depth>0)||r.pts.length<3)continue;
+    let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+    for(const q of r.pts){x0=Math.min(x0,q.x);x1=Math.max(x1,q.x);y0=Math.min(y0,q.y);y1=Math.max(y1,q.y);}
+    const i0=Math.max(0,Math.floor((x0-g.x0)/g.cell)), i1=Math.min(g.nx-1,Math.ceil((x1-g.x0)/g.cell));
+    const j0=Math.max(0,Math.floor((y0-g.y0)/g.cell)), j1=Math.min(g.ny-1,Math.ceil((y1-g.y0)/g.cell));
+    for(let j=j0;j<=j1;j++){
+      const y=g.y0+(j+0.5)*g.cell,row=j*g.nx;
+      for(let i=i0;i<=i1;i++)
+        if(inPoly(g.x0+(i+0.5)*g.cell,y,r.pts))d[row+i]=r.depth;
+    }
+  }
+  return d;
+}
+/** The comparison level at cell k: its own offset, less any region depth. */
+const cmpOff=(oB,dep,k)=>dep?oB-dep[k]:oB;
+
+function volumeOn(g,zA,zB,offA,offB,dep){
   const A=g.cell*g.cell;
   let cut=0,fill=0,n=0;
   for(let k=0;k<zA.length;k++){
     const a=zA[k],b=zB[k];
     if(a!==a||b!==b)continue;                  // NaN test
-    const d=(b+offB)-(a+offA);
+    const d=(b+cmpOff(offB,dep,k))-(a+offA);
     if(d>0)fill+=d;else cut-=d;
     n++;
   }
@@ -616,10 +665,11 @@ function recompute(){
   const gf=makeGrid(bb,cf), gc=makeGrid(bb,cc);
   const fa=rasterise(A,gf), fb=rasterise(B,gf);
   const ca=rasterise(A,gc), cb=rasterise(B,gc);
-  S.grids={fine:{g:gf,a:fa,b:fb},coarse:{g:gc,a:ca,b:cb}};
-  S.vol=volumeOn(gf,fa,fb,A.off,B.off);
+  S.grids={fine:{g:gf,a:fa,b:fb,dep:regionDepthGrid(gf)},
+           coarse:{g:gc,a:ca,b:cb,dep:regionDepthGrid(gc)}};
+  S.vol=volumeOn(gf,fa,fb,A.off,B.off,S.grids.fine.dep);
   if(!S.fitted){S.fitted=true;fitBands(true);}
-  S.volCoarse=volumeOn(gc,ca,cb,A.off,B.off);
+  S.volCoarse=volumeOn(gc,ca,cb,A.off,B.off,S.grids.coarse.dep);
   S.ms=Math.round(performance.now()-t0);DIFFDIRTY=true;
   showVol();drawBands();recomputeRegions();sectLabels();drawSection();draw();
 }
@@ -635,12 +685,12 @@ function bandOf(d){
 function bandVolumes(){
   const out=new Array(S.bands.length).fill(0);
   if(!S.grids)return out;
-  const {g,a,b}=S.grids.fine, A=g.cell*g.cell;
+  const {g,a,b,dep}=S.grids.fine, A=g.cell*g.cell;
   const oA=S.surfs[S.base].off, oB=S.surfs[S.comp].off;
   for(let k=0;k<a.length;k++){
     const x=a[k],y=b[k];
     if(x!==x||y!==y)continue;
-    const d=(y+oB)-(x+oA);
+    const d=(y+cmpOff(oB,dep,k))-(x+oA);
     const i=bandOf(d);
     if(i>=0)out[i]+=d*A;
   }
@@ -654,12 +704,12 @@ const r1=v=>Math.round(v*10)/10;
     band's ceiling are read from here and cannot be typed over. */
 function diffRange(){
   if(!S.grids)return null;
-  const {a,b}=S.grids.fine;
+  const {a,b,dep}=S.grids.fine;
   const oA=S.surfs[S.base].off,oB=S.surfs[S.comp].off;
   let lo=Infinity,hi=-Infinity;
   for(let k=0;k<a.length;k++){
     const x=a[k],y=b[k];if(x!==x||y!==y)continue;
-    const d=(y+oB)-(x+oA);
+    const d=(y+cmpOff(oB,dep,k))-(x+oA);
     if(d<lo)lo=d;if(d>hi)hi=d;
   }
   /* outward, not nearest: rounding a measured -4.32 up to -4.3 would put
@@ -898,7 +948,7 @@ let DIFFIMG=null, DIFFDIRTY=true;
 function hex2rgb(h){return [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
 function buildDiffImage(){
   if(!S.grids){DIFFIMG=null;return;}
-  const {g,a,b}=S.grids.coarse;
+  const {g,a,b,dep}=S.grids.coarse;
   const oA=S.surfs[S.base].off,oB=S.surfs[S.comp].off;
   const cols=S.bands.map(x=>hex2rgb(x.col));
   const off=document.createElement('canvas');off.width=g.nx;off.height=g.ny;
@@ -910,7 +960,7 @@ function buildDiffImage(){
     for(let i=0;i<g.nx;i++){
       const za=a[srow+i],zb=b[srow+i];
       if(za!==za||zb!==zb)continue;               // no data → transparent
-      const bi=bandOf((zb+oB)-(za+oA));
+      const bi=bandOf((zb+cmpOff(oB,dep,srow+i))-(za+oA));
       if(bi<0)continue;
       const c=cols[bi],k=(drow+i)*4;
       D[k]=c[0];D[k+1]=c[1];D[k+2]=c[2];D[k+3]=255;
@@ -937,7 +987,38 @@ function splash(){
 function draw(){
   cx.clearRect(0,0,W,H);
   cx.fillStyle='#0c1015';cx.fillRect(0,0,W,H);
-  if(S.mode==='3d')draw3D();else{drawDiff();drawRegions();drawCutLine();}
+  if(S.mode==='3d')draw3D();else{drawDiff();drawRegions();drawCutLine();drawAngLine();}
+}
+
+/** The orientation line, drawn with a sample label on it so you can see
+    which way up the exported text will sit before you export it. */
+function drawAngLine(){
+  if(S.tool!=='ang'&&!S.textAng&&!S.angA)return;
+  const s=S.v2.s,ox=S.v2.ox,oy=S.v2.oy;
+  if(S.angA){
+    const p={x:S.angA.x*s+ox,y:oy-S.angA.y*s};
+    cx.fillStyle='#6EE787';cx.beginPath();cx.arc(p.x,p.y,6,0,6.2832);cx.fill();
+    cx.strokeStyle='#0b0f14';cx.lineWidth=1.6;cx.stroke();
+    return;
+  }
+  if(!S.textAng)return;
+  let deg=S.textAng*180/Math.PI; deg=((deg%360)+360)%360;
+  if(deg>90&&deg<270)deg-=180;
+  const a=deg*Math.PI/180, L=Math.min(W,H)*0.22;
+  const cxp=W-L*0.6-34, cyp=58;      // top right, clear of the message box
+  const ux=Math.cos(a), uy=-Math.sin(a);          // screen y is down
+  cx.setLineDash([8,5]);cx.strokeStyle='#6EE787cc';cx.lineWidth=1.8;
+  cx.beginPath();cx.moveTo(cxp-ux*L/2,cyp-uy*L/2);cx.lineTo(cxp+ux*L/2,cyp+uy*L/2);cx.stroke();
+  cx.setLineDash([]);
+  /* Rides the line: what it is, and the angle. Nothing that could be
+     mistaken for a reading off the ground. */
+  let brg=(90-deg)%360; if(brg<0)brg+=360;
+  cx.save();
+  cx.translate(cxp,cyp);cx.rotate(-a);
+  cx.fillStyle='#6EE787';cx.font='600 13px '+getComputedStyle(document.body).fontFamily;
+  cx.textAlign='center';cx.fillText(T('labels')+'  '+brg.toFixed(1)+'°',0,-8);
+  cx.restore();
+  cx.textAlign='left';
 }
 
 /* ─────────────── section checker ───────────────
@@ -989,7 +1070,7 @@ function sectionData(){
   if(!S.sect||!S.grids)return null;
   const {ax,ay,bx,by}=S.sect;
   const L=Math.hypot(bx-ax,by-ay);
-  const {g,a,b}=S.grids.fine;
+  const {g,a,b,dep}=S.grids.fine;
   if(L<g.cell)return null;
   const step=Math.max(g.cell/2,L/600), n=Math.max(2,Math.ceil(L/step));
   const oA=S.surfs[S.base].off, oB=S.surfs[S.comp].off;
@@ -997,7 +1078,11 @@ function sectionData(){
   for(let k=0;k<=n;k++){
     const t=k/n, x=ax+(bx-ax)*t, y=ay+(by-ay)*t;
     const va=sampleGrid(a,g,x,y), vb=sampleGrid(b,g,x,y);
-    ch.push(L*t); za.push(va); zb.push(vb); zao.push(va+oA); zbo.push(vb+oB);
+    /* nearest cell, not interpolated — a depth is a step, and smoothing it
+       across the boundary would draw a batter that is not there */
+    const di=dep?dep[Math.min(g.ny-1,Math.max(0,Math.round((y-g.y0)/g.cell-0.5)))*g.nx
+                    +Math.min(g.nx-1,Math.max(0,Math.round((x-g.x0)/g.cell-0.5)))]:0;
+    ch.push(L*t); za.push(va); zb.push(vb); zao.push(va+oA); zbo.push(vb+oB-di);
   }
   return {L,ch,a:za,b:zb,ao:zao,bo:zbo,oA,oB};
 }
@@ -1086,6 +1171,15 @@ function sectLabels(){
 /* ───────────────────── interaction ───────────────────── */
 let drag=null;
 cv.addEventListener('pointerdown',e=>{
+  if(S.tool==='ang'&&S.mode==='diff'&&e.button===0){
+    const x=(e.offsetX-S.v2.ox)/S.v2.s, y=(S.v2.oy-e.offsetY)/S.v2.s;
+    if(!S.angA){S.angA={x,y};msg('Now click the far end — text will read along this line');draw();return;}
+    const dx=x-S.angA.x, dy=y-S.angA.y;
+    if(Math.hypot(dx,dy)<1e-6){msg('Those two points are the same — try again',true);return;}
+    S.textAng=Math.atan2(dy,dx);S.angA=null;
+    setTool('pan');showAngle();draw();
+    return;
+  }
   if(S.tool==='sect'&&S.mode==='diff'&&e.button===0){
     const x=(e.offsetX-S.v2.ox)/S.v2.s, y=(S.v2.oy-e.offsetY)/S.v2.s;
     if(!S.sectA){S.sectA={x,y};msg('Now click the far end of the section');draw();return;}
@@ -1134,14 +1228,72 @@ cv.addEventListener('wheel',e=>{
   draw();
 },{passive:false});
 function hoverDiff(sx,sy){
-  const {g,a,b}=S.grids.coarse;
+  const {g,a,b,dep}=S.grids.coarse;
   const x=(sx-S.v2.ox)/S.v2.s, y=(S.v2.oy-sy)/S.v2.s;
   const i=Math.floor((x-g.x0)/g.cell), j=Math.floor((y-g.y0)/g.cell);
   if(i<0||j<0||i>=g.nx||j>=g.ny){$('read').textContent=lz(g.cell)+T(' grid');return;}
   const za=a[j*g.nx+i],zb=b[j*g.nx+i];
   if(za!==za||zb!==zb){$('read').textContent=lz(g.cell)+T(' grid');return;}
-  const d=(zb+S.surfs[S.comp].off)-(za+S.surfs[S.base].off);
+  const d=(zb+cmpOff(S.surfs[S.comp].off,dep,j*g.nx+i))-(za+S.surfs[S.base].off);
   $('read').textContent=T('Difference at cursor')+': '+(d>=0?'+':'−')+lz(Math.abs(d));
+}
+
+/* ══════════════ sample ══════════════
+   A deterministic 180 x 140 m site: existing ground in gentle fall with
+   survey-scale noise, and a design surface holding two graded platforms
+   with batters out to daylight. Volumes are unbalanced on purpose so cut
+   and fill both read, and the two platforms are the obvious place to try
+   a region depth. Same numbers on every load. */
+function sampleXML(){
+  let seed=20260801;                        // fixed seed → identical sample every load
+  const rnd=()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);
+    t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+  const E0=512340.000, N0=8712500.000, W=180, H=140, step=2.5;
+  const nx=Math.round(W/step)+1, ny=Math.round(H/step)+1;
+
+  const ground=(x,y)=>1204.500-0.018*x+0.011*y+0.55*Math.sin(x/44)+0.35*Math.cos(y/37);
+  const eg=(x,y)=>ground(x,y)+(rnd()-0.5)*0.06;
+
+  // two platforms, each with a 1:3 batter running out to natural ground
+  const pads=[{x0:22,x1:92,y0:26,y1:86,z:1203.20},     // building slab platform
+              {x0:108,x1:162,y0:52,y1:118,z:1205.10}]; // car park platform
+  const fg=(x,y)=>{
+    let best=null,bd=1e9;
+    for(const p of pads){
+      const dx=Math.max(p.x0-x,0,x-p.x1), dy=Math.max(p.y0-y,0,y-p.y1);
+      const d=Math.hypot(dx,dy);
+      if(d<bd){bd=d;best=p;}
+    }
+    if(bd===0)return best.z;
+    const g=ground(x,y), reach=Math.abs(g-best.z)*3;       // 1 in 3 batter
+    if(bd>=reach||reach<0.01)return g;
+    return best.z+(g-best.z)*(bd/reach);
+  };
+
+  const surf=(name,fn)=>{
+    const P=[],F=[];
+    for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
+      const x=i*step,y=j*step;
+      P.push('<P id="'+(j*nx+i+1)+'">'+(N0+y).toFixed(3)+' '+(E0+x).toFixed(3)+' '+fn(x,y).toFixed(3)+'</P>');
+    }
+    for(let j=0;j<ny-1;j++)for(let i=0;i<nx-1;i++){
+      const a=j*nx+i+1,b=a+1,c=a+nx,d=c+1;
+      F.push('<F>'+a+' '+b+' '+d+'</F>','<F>'+a+' '+d+' '+c+'</F>');
+    }
+    return '<Surface name="'+name+'"><Definition surfType="TIN"><Pnts>'+P.join('')+
+           '</Pnts><Faces>'+F.join('')+'</Faces></Definition></Surface>';
+  };
+  const body=surf('SAMPLE EG stripped',eg)+surf('SAMPLE FG design',fg);
+  return '<?xml version="1.0"?><LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" version="1.2">'+
+    '<Units><Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter"/></Units>'+
+    '<Surfaces>'+body+'</Surfaces></LandXML>';
+}
+function loadSample(){
+  S.surfs=[];S.regions=[];S.base=-1;S.comp=-1;S.fitted=false;S.sect=null;S.sectA=null;
+  const got=parseLandXML(sampleXML(),'SAMPLE-SITE.xml');
+  for(const s of got){s.col=PALETTE[S.surfs.length%PALETTE.length];S.surfs.push(s);}
+  drawRegionList();drawSection();afterLoad();
+  msg('Sample site loaded — two platforms cut into sloping ground. Draw a region over a platform and give it a depth to try a pavement box.');
 }
 
 /* ───────────────────── file loading ───────────────────── */
@@ -1224,7 +1376,7 @@ const inPoly=(x,y,P)=>{
 /** volume inside one polygon, measured on the fine grid */
 function regionVolume(P){
   if(!S.grids||P.length<3)return null;
-  const {g,a,b}=S.grids.fine, A=g.cell*g.cell;
+  const {g,a,b,dep}=S.grids.fine, A=g.cell*g.cell;
   const oA=S.surfs[S.base].off,oB=S.surfs[S.comp].off;
   let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
   for(const p of P){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y);}
@@ -1237,7 +1389,7 @@ function regionVolume(P){
       const za=a[row+i],zb=b[row+i];
       if(za!==za||zb!==zb)continue;
       if(!inPoly(g.x0+(i+0.5)*g.cell,y,P))continue;
-      const d=(zb+oB)-(za+oA);
+      const d=(zb+cmpOff(oB,dep,row+i))-(za+oA);
       if(d>0)fill+=d;else cut-=d;
       n++;
     }
@@ -1245,13 +1397,27 @@ function regionVolume(P){
   return {cut:cut*A,fill:fill*A,net:(fill-cut)*A,area:n*A};
 }
 function recomputeRegions(){for(const r of S.regions)r.v=regionVolume(r.pts);drawRegionList();}
+/** Does any later region with a depth cover part of this one? Last in the
+    list wins, so the one being covered should say so. */
+function overridden(i){
+  const r=S.regions[i]; if(!r||r.pts.length<3)return false;
+  for(let k=i+1;k<S.regions.length;k++){
+    const o=S.regions[k]; if(!(o.depth>0)||o.pts.length<3)continue;
+    if(o.pts.some(q=>inPoly(q.x,q.y,r.pts))||r.pts.some(q=>inPoly(q.x,q.y,o.pts)))return true;
+  }
+  return false;
+}
 function drawRegionList(){
   const box=$('rlist');box.innerHTML='';
   S.regions.forEach((r,i)=>{
     const d=document.createElement('div');d.className='surf';
     const v=r.v;
     d.innerHTML=`<div class="nm"><span class="sw" style="background:#f2b01e"></span>${r.name}
-        <span style="flex:1"></span><button class="sm" data-rdel="${i}" style="padding:1px 6px">×</button></div>`+
+        <span style="flex:1"></span><button class="sm" data-rdel="${i}" style="padding:1px 6px">&times;</button></div>`+
+      `<label class="f">${T('Depth below surface')}</label>
+       <div class="offrow"><input type="number" min="0" step="0.05" value="${(r.depth||0).toFixed(2)}" data-rdep="${i}">
+         <span class="tag">${U().lab}</span></div>`+
+      (overridden(i)?`<div class="meta" style="color:#f0a68f">${T('Partly overridden by a region below')}</div>`:'')+
       (v?`<div class="kv"><span class="cut">${T('Cut')}</span><span>${m3(v.cut)}</span></div>
           <div class="kv"><span class="fill">${T('Fill')}</span><span>${m3(v.fill)}</span></div>
           <div class="kv"><span>${T('Net')}</span><span>${v.net>=0?'+':'−'}${m3(Math.abs(v.net))}</span></div>
@@ -1259,12 +1425,18 @@ function drawRegionList(){
          :`<div class="meta">—</div>`);
     box.appendChild(d);
   });
+  box.querySelectorAll('[data-rdep]').forEach(el=>el.onchange=()=>{
+    const r=S.regions[+el.dataset.rdep];
+    /* down only — a region depth is a box dug into the comparison surface,
+       and letting it go negative would quietly mean something else */
+    r.depth=Math.max(0,+el.value||0);
+    DIFFDIRTY=true;recompute();});
   box.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=()=>{
-    S.regions.splice(+b.dataset.rdel,1);drawRegionList();draw();});
+    S.regions.splice(+b.dataset.rdel,1);DIFFDIRTY=true;recompute();});
 }
 function finishRegion(){
   if(S.drawing&&S.drawing.length>=3){
-    const r={name:'Region '+(S.regions.length+1),pts:S.drawing.slice()};
+    const r={name:'Region '+(S.regions.length+1),pts:S.drawing.slice(),depth:0};
     r.v=regionVolume(r.pts);S.regions.push(r);
     msg(r.name+': '+(r.v?m3(r.v.net)+T(' net over ')+a2(r.v.area):'—'));
     drawRegionList();
@@ -1492,16 +1664,34 @@ function exportDXF(){
      precision — 2 dp with the trailing zeros stripped writes the same
      geometry in a good deal less text. */
   const N=v=>{const t=(Math.round(v*100)/100).toString();return t.indexOf('.')<0?t+'.0':t;};
-  const lx=bb.x1+Math.max(10,(bb.x1-bb.x0)*0.06), sw=Math.max(2,(bb.y1-bb.y0)*0.02);
+  const lx=bb.x1+Math.max(30,(bb.x1-bb.x0)*0.18), sw=Math.max(2,(bb.y1-bb.y0)*0.02);
   const lth=sw*0.7;
 
-  const text=(layer,x,y,ht,t,centre)=>{
+  /* ── label orientation ──
+     Civil 3D rotates plan-readable labels to the viewport twist. A DXF has
+     no such behaviour, so the angle is baked into every TEXT here. It is
+     normalised to plan-readable, meaning a line drawn either way round
+     gives text the right way up rather than upside down. */
+  let tdeg=(S.textAng||0)*180/Math.PI;
+  tdeg=((tdeg%360)+360)%360;
+  if(tdeg>90&&tdeg<270)tdeg-=180;
+  const TA=tdeg*Math.PI/180, TC=Math.cos(TA), TS=Math.sin(TA);
+  /* the legend is a stacked block, so its rows turn with it — rotating the
+     glyphs alone would leave the lines crossing each other */
+  const rp=(x,y,ax,ay)=>tdeg?{x:ax+(x-ax)*TC-(y-ay)*TS, y:ay+(x-ax)*TS+(y-ay)*TC}:{x,y};
+
+  const text=(layer,x,y,ht,t,centre,ang)=>{
+    const a=ang===undefined?tdeg:ang;
     head('TEXT',layer);
     G(100,'AcDbText');
     G(10,N(x));G(20,N(y));G(30,'0.0');G(40,N(ht));G(1,t);
+    if(a)G(50,N(a));
     if(centre){G(72,'1');G(11,N(x));G(21,N(y));G(31,'0.0');}
-    G(100,'AcDbText');G(73,'0');
+    G(100,'AcDbText');G(73,centre?'2':'0');   // 2 = middle, so the point is the true centre
   };
+  /* The legend is a table, not something read off the ground, so it stays
+     square to the sheet whatever the labels do. */
+  const ltext=(x,y,ht,t)=>text('DIFF-LEGEND',x,y,ht,t,false,0);
   const lwpoly=(layer,pts,col,closed)=>{
     head('LWPOLYLINE',layer,col);
     G(100,'AcDbPolyline');G(90,String(pts.length));G(70,closed?'1':'0');G(43,'0.0');
@@ -1514,6 +1704,16 @@ function exportDXF(){
     G(11,N(x1));G(21,N(y0));G(31,'0.0');
     G(12,N(x0));G(22,N(y1));G(32,'0.0');
     G(13,N(x1));G(23,N(y1));G(33,'0.0');
+  };
+  /* SOLID from four explicit corners, so the legend swatch can turn with
+     the block instead of staying stubbornly axis-aligned */
+  const quad=(layer,col,p0,p1,p2,p3)=>{
+    head('SOLID',layer,col);
+    G(100,'AcDbTrace');
+    G(10,N(p0.x));G(20,N(p0.y));G(30,'0.0');
+    G(11,N(p1.x));G(21,N(p1.y));G(31,'0.0');
+    G(12,N(p2.x));G(22,N(p2.y));G(32,'0.0');
+    G(13,N(p3.x));G(23,N(p3.y));G(33,'0.0');
   };
   const hatch=(layer,col,loops)=>{
     head('HATCH',layer,col);
@@ -1533,10 +1733,11 @@ function exportDXF(){
   /* ── the colour map ── */
   let fills=0,outlines=0;
   const bandGrid=new Int16Array(g.nx*g.ny).fill(-1);
+  const xdep=regionDepthGrid(g);
   for(let k=0;k<bandGrid.length;k++){
     const a=za[k],b2=zb[k];
     if(a!==a||b2!==b2)continue;
-    bandGrid[k]=bandOf((b2+oB)-(a+oA));
+    bandGrid[k]=bandOf((b2+cmpOff(oB,xdep,k))-(a+oA));
   }
   let live=0;for(let k=0;k<bandGrid.length;k++)if(bandGrid[k]>=0)live++;
   const absorbed=despeckle(bandGrid,g.nx,g.ny,Math.round(minArea/(cell*cell)));
@@ -1576,36 +1777,81 @@ function exportDXF(){
   let eased=false;
   while(((bb.x1-bb.x0)/lbl)*((bb.y1-bb.y0)/lbl)>LBLCAP){lbl*=2;eased=true;}
   const gl=makeGrid(bb,lbl), la=rasterise(A,gl), lb=rasterise(B,gl);
+  const ldep=regionDepthGrid(gl);
   const th=Math.max(0.4,lbl/12);
   let labels=0;
   for(let j=0;j<gl.ny;j++)for(let i=0;i<gl.nx;i++){
     const a=la[j*gl.nx+i],b2=lb[j*gl.nx+i];
     if(a!==a||b2!==b2)continue;
-    const d=(b2+oB)-(a+oA);
-    text('DIFF-LABELS',gl.x0+(i+0.5)*lbl,gl.y0+(j+0.5)*lbl,th,(d>=0?'+':'-')+Math.abs(d).toFixed(2),true);
+    const d=(b2+cmpOff(oB,ldep,j*gl.nx+i))-(a+oA);
+    /* Centred text puts the middle of the string on the point. Padding the
+       short side makes that middle the decimal point itself, so the anchor
+       is a landmark you can name rather than a spot inside a digit. */
+    let t=(d>=0?'+':'-')+Math.abs(d).toFixed(2);
+    const dp=t.indexOf('.'), L=dp, R=t.length-dp-1;
+    if(L>R)t+=' '.repeat(L-R); else if(R>L)t=' '.repeat(R-L)+t;
+    text('DIFF-LABELS',gl.x0+(i+0.5)*lbl,gl.y0+(j+0.5)*lbl,th,t,true);
     labels++;
   }
 
   /* ── legend ── */
   const vols=bandVolumes();
-  let ly=bb.y1;
-  text('DIFF-LEGEND',lx,ly,lth*1.5,A.name+' to '+B.name); ly-=sw*2;
   const VU=U().vlab.replace('³','3'), VD=U().vdiv;
-  const vtx=v=>Math.round(v/VD)+' '+VU;
-  text('DIFF-LEGEND',lx,ly,lth,'Cut '+vtx(S.vol.cut)+'   Fill '+vtx(S.vol.fill)+
-       '   Net '+vtx(S.vol.net)); ly-=sw*2;
-  S.bands.forEach((bd,i)=>{
-    solid('DIFF-LEGEND',rgb(bd.col),lx,ly,lx+sw,ly+sw);
-    text('DIFF-LEGEND',lx+sw*1.4,ly+sw*0.15,lth,
-         bd.min.toFixed(2)+' to '+bd.max.toFixed(2)+' '+U().lab+'    '+vtx(vols[i]));
-    ly-=sw*1.35;
+  /* 1,000 not 1000 — a legend is read at a glance */
+  const com=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  const vtx=v=>com(Math.round(v/VD))+' '+VU;
+  /* a leading space where the minus sign would be: without it every positive
+     row sits one character left of every negative one */
+  const sgn=(v,dp)=>(v<0?'':' ')+v.toFixed(dp);
+  const sgnv=v=>(v<0?'':' ')+vtx(v);
+  /* level changes are state that lives only in the browser, so the drawing
+     has to state them or the number cannot be reproduced from the files */
+  const adj=[];
+  if(A.off)adj.push(A.name.toUpperCase()+' '+(A.off>0?'+':'')+A.off.toFixed(3));
+  if(B.off)adj.push(B.name.toUpperCase()+' '+(B.off>0?'+':'')+B.off.toFixed(3));
+  for(const r of S.regions)if(r.depth>0)adj.push(r.name.toUpperCase()+' -'+r.depth.toFixed(2));
+
+  /* Build the rows first, so the box can be drawn round what is actually
+     there rather than guessed at. Headings and labels are capitalised;
+     units are left as written, because M2 is not a unit. */
+  const rows=[{t:(A.name+' to '+B.name).toUpperCase(),h:lth*1.5,rule:1}];
+  rows.push({t:'CUT '+vtx(S.vol.cut)+'   FILL '+vtx(S.vol.fill)+'   NET '+sgnv(S.vol.net).trimStart(),h:lth,rule:1});
+  if(adj.length)rows.push({t:'LEVEL CHANGES APPLIED ('+U().lab+'): '+adj.join(',  '),h:lth*0.9,rule:1});
+  S.bands.forEach((bd,i)=>rows.push({
+    t:sgn(bd.min,2)+' TO '+sgn(bd.max,2)+' '+U().lab+'   '+sgnv(vols[i]),h:lth,col:bd.col}));
+
+  const lpad=sw*0.5, indent=sw*1.4;
+  /* txt.shx runs about 0.8 of the cap height per character; the old 0.62
+     left the rules short of the title */
+  const wide=rows.reduce((m,r)=>Math.max(m,r.t.length*r.h*0.8+(r.col?indent:0)),0);
+  const bw=wide+lpad*2, rowH=sw*1.5;
+  let ly=bb.y1-lpad-rowH*0.75;
+  let last=ly;
+  const rule=y=>lwpoly('DIFF-LEGEND',[{x:lx,y},{x:lx+bw,y}],undefined,false);
+  rows.forEach((r,i)=>{
+    if(r.col)quad('DIFF-LEGEND',rgb(r.col),
+      {x:lx+lpad,y:ly-sw*0.2},{x:lx+lpad+sw,y:ly-sw*0.2},
+      {x:lx+lpad,y:ly-sw*0.2+sw},{x:lx+lpad+sw,y:ly-sw*0.2+sw});
+    ltext(lx+lpad+(r.col?indent:0),ly,r.h,r.t);
+    last=ly;
+    /* the rule belongs in the clear space between this row's baseline and
+       the next row's cap height, or it draws straight through the text */
+    if(i<rows.length-1)rule(ly-(rowH-rows[i+1].h)/2);
+    ly-=rowH;
   });
+  rule(last-rowH*0.45);                      // closes the last row off
+  /* Where a label actually sits, stated on the drawing rather than left to
+     be discovered by anyone setting out from it. */
+  ltext(lx,last-rowH*1.35,lth*0.85,
+    'DIFFERENCE LABEL ANCHOR POINT IS THE DECIMAL POINT OF THE VALUE');
 
   /* ── regions ── */
   for(const r of S.regions){
     lwpoly('REGIONS',r.pts,undefined,true);
     const c=r.pts.reduce((a,pt)=>({x:a.x+pt.x/r.pts.length,y:a.y+pt.y/r.pts.length}),{x:0,y:0});
-    text('REGIONS',c.x,c.y,lth,r.name+(r.v?'  net '+vtx(r.v.net):''),true);
+    text('REGIONS',c.x,c.y,lth,
+      r.name.toUpperCase()+(r.depth>0?'  -'+r.depth.toFixed(2)+' '+U().lab:'')+
+      (r.v?'  NET '+vtx(r.v.net):''),true,0);
   }
 
   let body='';for(let i=0;i<o.length;i+=2)body+=String(o[i]).padStart(3,' ')+'\n'+o[i+1]+'\n';
@@ -1621,6 +1867,15 @@ function exportDXF(){
 }
 
 /* ── LandXML out: the difference itself, as a surface ── */
+/** Every level change, written into the file so the surface carries its
+    own working rather than depending on the browser session. */
+function xmlAdjNote(A,B){
+  const p=[];
+  if(A.off)p.push('base '+(A.off>0?'+':'')+A.off.toFixed(3));
+  if(B.off)p.push('comparison '+(B.off>0?'+':'')+B.off.toFixed(3));
+  for(const r of S.regions)if(r.depth>0)p.push(r.name.replace(/[<>&"]/g,'')+' -'+r.depth.toFixed(2));
+  return p.length?('level changes applied ('+U().lab+'): '+p.join('; ')):'no level changes applied';
+}
 function exportDiffXML(){
   if(!S.grids){msg('Load two surfaces first',true);return;}
   const A=S.surfs[S.base],B=S.surfs[S.comp];
@@ -1628,14 +1883,14 @@ function exportDiffXML(){
      turned into a hundred-megabyte surface nobody asked for. */
   const bb=commonBB(A,B); if(!bb){msg('The two surfaces do not overlap',true);return;}
   const g=makeGrid(bb,+$('exSurf').value), a=rasterise(A,g), b=rasterise(B,g);
-  const oA=A.off,oB=B.off;
+  const oA=A.off,oB=B.off, xdep=regionDepthGrid(g);
   const id=new Int32Array(g.nx*g.ny).fill(-1);
   const P=[];
   for(let j=0;j<g.ny;j++)for(let i=0;i<g.nx;i++){
     const za=a[j*g.nx+i],zb=b[j*g.nx+i];
     if(za!==za||zb!==zb)continue;
     id[j*g.nx+i]=P.length;
-    P.push([g.y0+(j+0.5)*g.cell, g.x0+(i+0.5)*g.cell, (zb+oB)-(za+oA)]);
+    P.push([g.y0+(j+0.5)*g.cell, g.x0+(i+0.5)*g.cell, (zb+cmpOff(oB,xdep,j*g.nx+i))-(za+oA)]);
   }
   if(!P.length){msg('Nothing to export',true);return;}
   const F=[];
@@ -1649,8 +1904,8 @@ function exportDiffXML(){
     '<Units>'+(S.units==='ft'
        ? '<Imperial linearUnit="foot" areaUnit="squareFoot" volumeUnit="cubicFeet" temperatureUnit="fahrenheit" pressureUnit="inHG"/>'
        : '<Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter" temperatureUnit="celsius" pressureUnit="milliBars"/>')+'</Units>\n'+
-    '<Application name="Volume Solver" version="2.5"/>\n'+
-    '<Surfaces><Surface name="'+A.name+' to '+B.name+' difference"><Definition surfType="TIN">\n<Pnts>\n';
+    '<Application name="Volume Solver" version="3.2"/>\n'+
+    '<Surfaces><Surface name="'+A.name+' to '+B.name+' difference" desc="'+xmlAdjNote(A,B)+'"><Definition surfType="TIN">\n<Pnts>\n';
   P.forEach((p,i)=>{x+='<P id="'+(i+1)+'">'+p[0].toFixed(4)+' '+p[1].toFixed(4)+' '+p[2].toFixed(4)+'</P>\n';});
   x+='</Pnts>\n<Faces>\n';
   for(const f of F)x+='<F>'+f[0]+' '+f[1]+' '+f[2]+'</F>\n';
@@ -1669,8 +1924,10 @@ function save(name,text,mime){
 function setTool(t){
   S.tool=t;
   if(t!=='sect')S.sectA=null;
+  if(t!=='ang')S.angA=null;
   if(t!=='region')S.drawing=null;
   $('tSect').classList.toggle('on',t==='sect');
+  $('tAng').classList.toggle('on',t==='ang');
   $('rDraw').classList.toggle('on',t==='region');
   draw();
 }
@@ -1680,6 +1937,19 @@ $('tSect').onclick=()=>{
   if(S.tool==='sect'){setTool('pan');msg('Section tool off');return;}
   setTool('sect');msg('Click two points to cut a section through the surfaces');
 };
+$('tAng').onclick=()=>{
+  if(!S.grids){msg('Load two surfaces first',true);return;}
+  if(S.mode!=='diff')$('tdiff').click();
+  if(S.tool==='ang'){setTool('pan');msg('Angle tool off');return;}
+  setTool('ang');msg('Draw a line the way you want exported text to read');
+};
+$('angReset').onclick=()=>{S.textAng=0;S.angA=null;showAngle();draw();};
+/** Bearing shown the way a surveyor reads it: clockwise from north. */
+function showAngle(){
+  const a=S.textAng||0;
+  let brg=(90-a*180/Math.PI)%360; if(brg<0)brg+=360;
+  $('angRead').value=a===0?T('North (0.0°)'):T('Bearing ')+brg.toFixed(1)+'°';
+}
 $('sectClose').onclick=()=>{S.sect=null;drawSection();draw();};
 [['sA','a'],['sAo','ao'],['sB','b'],['sBo','bo']].forEach(([id,k])=>{
   $(id).onchange=e=>{S.sShow[k]=e.target.checked?1:0;drawSection();};
@@ -1705,10 +1975,13 @@ $('rFile').onchange=e=>{
   };
   r.readAsText(f);e.target.value='';
 };
+$('btnSample').onclick=loadSample;
+showAngle();
 $('exDXF').onclick=exportDXF;
 $('exXML').onclick=exportDiffXML;
 addEventListener('keydown',e=>{
   if(e.key==='Escape'&&S.tool==='sect'){setTool('pan');msg('Section tool off');return;}
+  if(e.key==='Escape'&&S.tool==='ang'){setTool('pan');msg('Angle tool off');return;}
   if(!S.drawing)return;
   if(e.key==='Enter'){finishRegion();}
   else if(e.key==='Escape'){S.drawing=null;setTool('pan');msg('Region abandoned');draw();}
