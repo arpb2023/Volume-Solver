@@ -302,6 +302,13 @@ const $=id=>document.getElementById(id);
 
 /* ───────────────────────── languages ───────────────────────── */
 const TR={
+"No usable boundary found in that DXF":["Nenhum contorno utilizável encontrado nesse DXF","Aucun contour exploitable trouvé dans ce DXF","No se encontró ningún contorno utilizable en ese DXF"],
+" — skipped ":[" — ignorados "," — ignorés "," — omitidos "],
+" — regions must be closed polylines on the same coordinates as your surfaces":[" — as regiões têm de ser polilinhas fechadas nas mesmas coordenadas das suas superfícies"," — les régions doivent être des polylignes fermées aux mêmes coordonnées que vos surfaces"," — las regiones deben ser polilíneas cerradas en las mismas coordenadas que sus superficies"],
+" open":[" abertas"," ouvertes"," abiertas"],
+" off the site":[" fora do local"," hors du site"," fuera del sitio"],
+" with no area":[" sem área"," sans surface"," sin área"],
+" duplicate":[" duplicadas"," en double"," duplicadas"],
 "Angle":["Ângulo","Angle","Ángulo"],
 "Draw a line to set which way exported labels read":["Desenhe uma linha para definir a direção de leitura das etiquetas exportadas","Tracez une ligne pour définir le sens de lecture des étiquettes exportées","Dibuje una línea para definir la dirección de lectura de las etiquetas exportadas"],
 "Label orientation":["Orientação das etiquetas","Orientation des étiquettes","Orientación de las etiquetas"],
@@ -424,7 +431,6 @@ const TR={
 "The DXF carries the coloured grid, the band table as a legend, difference labels on their own grid, and any regions — each on its own layer.":["O DXF leva a grelha colorida, a tabela de faixas como legenda, etiquetas de diferença na sua própria grelha e as regiões — cada uma na sua camada.","Le DXF contient la grille colorée, le tableau des plages en légende, les étiquettes de différence sur leur propre grille et les régions — chacune sur son calque.","El DXF lleva la malla coloreada, la tabla de franjas como leyenda, etiquetas de diferencia en su propia malla y las regiones — cada una en su capa."],
 "Click each corner of the region, Enter to close it, Esc to abandon":["Clique em cada canto da região, Enter para fechar, Esc para abandonar","Cliquez chaque sommet de la région, Entrée pour fermer, Échap pour abandonner","Haga clic en cada esquina de la región, Intro para cerrarla, Esc para abandonar"],
 "Region abandoned":["Região abandonada","Région abandonnée","Región abandonada"],
-"No closed polylines found in that DXF":["Nenhuma polilinha fechada encontrada nesse DXF","Aucune polyligne fermée trouvée dans ce DXF","No se encontraron polilíneas cerradas en ese DXF"],
 "Nothing to export":["Nada para exportar","Rien à exporter","Nada que exportar"],
 "DXF written — ":["DXF exportado — ","DXF exporté — ","DXF exportado — "],
 "LandXML written — ":["LandXML exportado — ","LandXML exporté — ","LandXML exportado — "],
@@ -1466,29 +1472,68 @@ function drawRegions(){
 }
 
 /* ── DXF in: closed polylines become regions ── */
+/** Boundaries out of a DXF.
+    The old reader walked the whole file and took anything with three
+    vertices, which meant title blocks, north arrows and every open setout
+    string arrived as a "region". It now reads only the ENTITIES section,
+    only closed polylines, and reports what it threw away and why. */
 function readDXF(text){
   const L=text.split(/\r?\n/);
-  const polys=[];let i=0;
-  while(i<L.length-1){
-    const code=L[i].trim(), val=L[i+1];
-    if(code==='0'&&val.trim()==='LWPOLYLINE'){
-      const pts=[];i+=2;
-      while(i<L.length-1&&L[i].trim()!=='0'){
+  const polys=[]; const skip={open:0,tiny:0,away:0,dup:0};
+
+  /* modelspace only — block definitions live in BLOCKS and are drawing
+     furniture, not site boundaries */
+  let i=0, start=-1, end=L.length;
+  for(let k=0;k<L.length-3;k+=2){
+    if(L[k].trim()==='2'&&L[k+1].trim()==='ENTITIES'){start=k+2;break;}
+  }
+  if(start<0)return{polys,skip};
+  for(let k=start;k<L.length-1;k+=2){
+    if(L[k].trim()==='0'&&L[k+1].trim()==='ENDSEC'){end=k;break;}
+  }
+
+  const area=P=>{let s2=0;for(let k=0,j=P.length-1;k<P.length;j=k++)
+    s2+=(P[j].x-P[k].x)*(P[j].y+P[k].y);return Math.abs(s2/2);};
+  const shut=P=>Math.hypot(P[0].x-P[P.length-1].x,P[0].y-P[P.length-1].y);
+
+  const take=(P,closed,layer)=>{
+    if(P.length<3)return;
+    if(!closed&&shut(P)>1e-6){skip.open++;return;}
+    if(shut(P)<1e-9&&P.length>3)P.pop();          // drop the repeated last point
+    if(area(P)<1e-6){skip.tiny++;return;}
+    polys.push({pts:P,layer:layer||'0'});
+  };
+
+  i=start;
+  while(i<end-1){
+    const code=L[i].trim(), val=(L[i+1]||'').trim();
+    if(code==='0'&&val==='LWPOLYLINE'){
+      const pts=[];let closed=false,layer='0';i+=2;
+      while(i<end-1&&L[i].trim()!=='0'){
         const c=L[i].trim();
-        if(c==='10'){const x=parseFloat(L[i+1]);
-          let y=NaN;for(let k=i+2;k<i+8&&k<L.length-1;k+=2)if(L[k].trim()==='20'){y=parseFloat(L[k+1]);break;}
-          if(isFinite(x)&&isFinite(y))pts.push({x,y});}
+        if(c==='8')layer=L[i+1].trim();
+        if(c==='70')closed=(parseInt(L[i+1])&1)===1;
+        if(c==='10'){
+          const x=parseFloat(L[i+1]);
+          let y=NaN;for(let k=i+2;k<i+8&&k<end-1;k+=2)if(L[k].trim()==='20'){y=parseFloat(L[k+1]);break;}
+          if(isFinite(x)&&isFinite(y))pts.push({x,y});
+        }
         i+=2;
       }
-      if(pts.length>=3)polys.push(pts);
-      continue;
+      take(pts,closed,layer);continue;
     }
-    if(code==='0'&&val.trim()==='POLYLINE'){
-      const pts=[];i+=2;
-      while(i<L.length-1){
+    if(code==='0'&&val==='POLYLINE'){
+      const pts=[];let closed=false,layer='0';i+=2;
+      while(i<end-1&&L[i].trim()!=='0'){
+        const c=L[i].trim();
+        if(c==='8')layer=L[i+1].trim();
+        if(c==='70')closed=(parseInt(L[i+1])&1)===1;
+        i+=2;
+      }
+      while(i<end-1){
         if(L[i].trim()==='0'&&L[i+1].trim()==='VERTEX'){
           let x=NaN,y=NaN;i+=2;
-          while(i<L.length-1&&L[i].trim()!=='0'){
+          while(i<end-1&&L[i].trim()!=='0'){
             if(L[i].trim()==='10')x=parseFloat(L[i+1]);
             if(L[i].trim()==='20')y=parseFloat(L[i+1]);
             i+=2;
@@ -1497,14 +1542,35 @@ function readDXF(text){
           continue;
         }
         if(L[i].trim()==='0'&&L[i+1].trim()==='SEQEND'){i+=2;break;}
-        i+=2;
+        break;
       }
-      if(pts.length>=3)polys.push(pts);
-      continue;
+      take(pts,closed,layer);continue;
     }
     i+=2;
   }
-  return polys;
+
+  /* anything nowhere near the surfaces is a border or a symbol, not a
+     boundary — a region off the site can only ever measure nothing */
+  if(S.surfs.length){
+    const A=S.surfs[S.base]||S.surfs[0];
+    const bb=S.comp>=0?commonBB(A,S.surfs[S.comp]):A.bb;
+    if(bb){
+      const keep=[];
+      for(const q of polys){
+        const hit=q.pts.some(pt=>pt.x>=bb.x0&&pt.x<=bb.x1&&pt.y>=bb.y0&&pt.y<=bb.y1);
+        hit?keep.push(q):skip.away++;
+      }
+      polys.length=0;polys.push(...keep);
+    }
+  }
+  /* the same outline on two layers is one boundary */
+  const seen=new Set(),uniq=[];
+  for(const q of polys){
+    const k=q.pts.map(pt=>pt.x.toFixed(3)+','+pt.y.toFixed(3)).join(';');
+    if(seen.has(k)){skip.dup++;continue;}
+    seen.add(k);uniq.push(q);
+  }
+  return {polys:uniq,skip};
 }
 
 const DXF_PRE="  0\nSECTION\n  2\nHEADER\n  9\n$ACADVER\n  1\nAC1018\n  9\n$ACADMAINTVER\n 70\n0\n  9\n$DWGCODEPAGE\n  3\nANSI_1252\n  9\n$LASTSAVEDBY\n  1\nezdxf\n  9\n$INSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$EXTMIN\n 10\n1e+20\n 20\n1e+20\n 30\n1e+20\n  9\n$EXTMAX\n 10\n-1e+20\n 20\n-1e+20\n 30\n-1e+20\n  9\n$LIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$LIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$ORTHOMODE\n 70\n0\n  9\n$REGENMODE\n 70\n1\n  9\n$FILLMODE\n 70\n1\n  9\n$QTEXTMODE\n 70\n0\n  9\n$MIRRTEXT\n 70\n1\n  9\n$LTSCALE\n 40\n1.0\n  9\n$ATTMODE\n 70\n1\n  9\n$TEXTSIZE\n 40\n2.5\n  9\n$TRACEWID\n 40\n1.0\n  9\n$TEXTSTYLE\n  7\nStandard\n  9\n$CLAYER\n  8\n0\n  9\n$CELTYPE\n  6\nByLayer\n  9\n$CECOLOR\n 62\n256\n  9\n$CELTSCALE\n 40\n1.0\n  9\n$DISPSILH\n 70\n0\n  9\n$DIMSCALE\n 40\n1.0\n  9\n$DIMASZ\n 40\n2.5\n  9\n$DIMEXO\n 40\n0.625\n  9\n$DIMDLI\n 40\n3.75\n  9\n$DIMRND\n 40\n0.0\n  9\n$DIMDLE\n 40\n0.0\n  9\n$DIMEXE\n 40\n1.25\n  9\n$DIMTP\n 40\n0.0\n  9\n$DIMTM\n 40\n0.0\n  9\n$DIMTXT\n 40\n2.5\n  9\n$DIMCEN\n 40\n2.5\n  9\n$DIMTSZ\n 40\n0.0\n  9\n$DIMTOL\n 70\n0\n  9\n$DIMLIM\n 70\n0\n  9\n$DIMTIH\n 70\n0\n  9\n$DIMTOH\n 70\n0\n  9\n$DIMSE1\n 70\n0\n  9\n$DIMSE2\n 70\n0\n  9\n$DIMTAD\n 70\n1\n  9\n$DIMZIN\n 70\n8\n  9\n$DIMBLK\n  1\n\n  9\n$DIMASO\n 70\n1\n  9\n$DIMSHO\n 70\n1\n  9\n$DIMPOST\n  1\n\n  9\n$DIMAPOST\n  1\n\n  9\n$DIMALT\n 70\n0\n  9\n$DIMALTD\n 70\n3\n  9\n$DIMALTF\n 40\n0.03937007874\n  9\n$DIMLFAC\n 40\n1.0\n  9\n$DIMTOFL\n 70\n1\n  9\n$DIMTVP\n 40\n0.0\n  9\n$DIMTIX\n 70\n0\n  9\n$DIMSOXD\n 70\n0\n  9\n$DIMSAH\n 70\n0\n  9\n$DIMBLK1\n  1\n\n  9\n$DIMBLK2\n  1\n\n  9\n$DIMSTYLE\n  2\nISO-25\n  9\n$DIMCLRD\n 70\n0\n  9\n$DIMCLRE\n 70\n0\n  9\n$DIMCLRT\n 70\n0\n  9\n$DIMTFAC\n 40\n1.0\n  9\n$DIMGAP\n 40\n0.625\n  9\n$DIMJUST\n 70\n0\n  9\n$DIMSD1\n 70\n0\n  9\n$DIMSD2\n 70\n0\n  9\n$DIMTOLJ\n 70\n0\n  9\n$DIMTZIN\n 70\n8\n  9\n$DIMALTZ\n 70\n0\n  9\n$DIMALTTZ\n 70\n0\n  9\n$DIMUPT\n 70\n0\n  9\n$DIMDEC\n 70\n2\n  9\n$DIMTDEC\n 70\n2\n  9\n$DIMALTU\n 70\n2\n  9\n$DIMALTTD\n 70\n3\n  9\n$DIMTXSTY\n  7\nStandard\n  9\n$DIMAUNIT\n 70\n0\n  9\n$DIMADEC\n 70\n0\n  9\n$DIMALTRND\n 40\n0.0\n  9\n$DIMAZIN\n 70\n0\n  9\n$DIMDSEP\n 70\n44\n  9\n$DIMATFIT\n 70\n3\n  9\n$DIMFRAC\n 70\n0\n  9\n$DIMLDRBLK\n  1\n\n  9\n$DIMLUNIT\n 70\n2\n  9\n$DIMLWD\n 70\n-2\n  9\n$DIMLWE\n 70\n-2\n  9\n$DIMTMOVE\n 70\n0\n  9\n$LUNITS\n 70\n2\n  9\n$LUPREC\n 70\n4\n  9\n$SKETCHINC\n 40\n1.0\n  9\n$FILLETRAD\n 40\n10.0\n  9\n$AUNITS\n 70\n0\n  9\n$AUPREC\n 70\n2\n  9\n$MENU\n  1\n.\n  9\n$ELEVATION\n 40\n0.0\n  9\n$PELEVATION\n 40\n0.0\n  9\n$THICKNESS\n 40\n0.0\n  9\n$LIMCHECK\n 70\n0\n  9\n$CHAMFERA\n 40\n0.0\n  9\n$CHAMFERB\n 40\n0.0\n  9\n$CHAMFERC\n 40\n0.0\n  9\n$CHAMFERD\n 40\n0.0\n  9\n$SKPOLY\n 70\n0\n  9\n$TDCREATE\n 40\n2461246.2380787036\n  9\n$TDUCREATE\n 40\n2458532.153996898\n  9\n$TDUPDATE\n 40\n2461246.2380787036\n  9\n$TDUUPDATE\n 40\n2458532.1544311\n  9\n$TDINDWG\n 40\n0.0\n  9\n$TDUSRTIMER\n 40\n0.0\n  9\n$USRTIMER\n 70\n1\n  9\n$ANGBASE\n 50\n0.0\n  9\n$ANGDIR\n 70\n0\n  9\n$PDMODE\n 70\n0\n  9\n$PDSIZE\n 40\n0.0\n  9\n$PLINEWID\n 40\n0.0\n  9\n$SPLFRAME\n 70\n0\n  9\n$SPLINETYPE\n 70\n6\n  9\n$SPLINESEGS\n 70\n8\n  9\n$HANDSEED\n  5\nFFFFFF\n  9\n$SURFTAB1\n 70\n6\n  9\n$SURFTAB2\n 70\n6\n  9\n$SURFTYPE\n 70\n6\n  9\n$SURFU\n 70\n6\n  9\n$SURFV\n 70\n6\n  9\n$UCSBASE\n  2\n\n  9\n$UCSNAME\n  2\n\n  9\n$UCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$UCSORTHOREF\n  2\n\n  9\n$UCSORTHOVIEW\n 70\n0\n  9\n$UCSORGTOP\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGBOTTOM\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGLEFT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGRIGHT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGFRONT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$UCSORGBACK\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSBASE\n  2\n\n  9\n$PUCSNAME\n  2\n\n  9\n$PUCSORG\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSXDIR\n 10\n1.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSYDIR\n 10\n0.0\n 20\n1.0\n 30\n0.0\n  9\n$PUCSORTHOREF\n  2\n\n  9\n$PUCSORTHOVIEW\n 70\n0\n  9\n$PUCSORGTOP\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGBOTTOM\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGLEFT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGRIGHT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGFRONT\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PUCSORGBACK\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$USERI1\n 70\n0\n  9\n$USERI2\n 70\n0\n  9\n$USERI3\n 70\n0\n  9\n$USERI4\n 70\n0\n  9\n$USERI5\n 70\n0\n  9\n$USERR1\n 40\n0.0\n  9\n$USERR2\n 40\n0.0\n  9\n$USERR3\n 40\n0.0\n  9\n$USERR4\n 40\n0.0\n  9\n$USERR5\n 40\n0.0\n  9\n$WORLDVIEW\n 70\n1\n  9\n$SHADEDGE\n 70\n3\n  9\n$SHADEDIF\n 70\n70\n  9\n$TILEMODE\n 70\n1\n  9\n$MAXACTVP\n 70\n64\n  9\n$PINSBASE\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  9\n$PLIMCHECK\n 70\n0\n  9\n$PEXTMIN\n 10\n1e+20\n 20\n1e+20\n 30\n1e+20\n  9\n$PEXTMAX\n 10\n-1e+20\n 20\n-1e+20\n 30\n-1e+20\n  9\n$PLIMMIN\n 10\n0.0\n 20\n0.0\n  9\n$PLIMMAX\n 10\n420.0\n 20\n297.0\n  9\n$UNITMODE\n 70\n0\n  9\n$VISRETAIN\n 70\n1\n  9\n$PLINEGEN\n 70\n0\n  9\n$PSLTSCALE\n 70\n1\n  9\n$TREEDEPTH\n 70\n3020\n  9\n$CMLSTYLE\n  2\nStandard\n  9\n$CMLJUST\n 70\n0\n  9\n$CMLSCALE\n 40\n20.0\n  9\n$PROXYGRAPHICS\n 70\n1\n  9\n$MEASUREMENT\n 70\n1\n  9\n$CELWEIGHT\n370\n-1\n  9\n$ENDCAPS\n280\n0\n  9\n$JOINSTYLE\n280\n0\n  9\n$LWDISPLAY\n290\n0\n  9\n$INSUNITS\n 70\n6\n  9\n$HYPERLINKBASE\n  1\n\n  9\n$STYLESHEET\n  1\n\n  9\n$XEDIT\n290\n1\n  9\n$CEPSNTYPE\n380\n0\n  9\n$PSTYLEMODE\n290\n1\n  9\n$FINGERPRINTGUID\n  2\n{9DDDAE12-EEBA-42C2-8140-5B0A06BC1105}\n  9\n$VERSIONGUID\n  2\n{FDB417C0-C00B-406D-9737-BC59D68BBB1A}\n  9\n$EXTNAMES\n290\n1\n  9\n$PSVPSCALE\n 40\n0.0\n  9\n$OLESTARTUP\n290\n0\n  9\n$SORTENTS\n280\n127\n  9\n$INDEXCTL\n280\n0\n  9\n$HIDETEXT\n280\n1\n  9\n$XCLIPFRAME\n290\n1\n  9\n$HALOGAP\n280\n0\n  9\n$OBSCOLOR\n 70\n257\n  9\n$OBSLTYPE\n280\n0\n  9\n$INTERSECTIONDISPLAY\n280\n0\n  9\n$INTERSECTIONCOLOR\n 70\n257\n  9\n$DIMASSOC\n280\n2\n  9\n$PROJECTNAME\n  1\n\n  0\nENDSEC\n  0\nSECTION\n  2\nCLASSES\n  0\nCLASS\n  1\nACDBDICTIONARYWDFLT\n  2\nAcDbDictionaryWithDefault\n  3\nObjectDBX Classes\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nSUN\n  2\nAcDbSun\n  3\nSCENEOE\n 90\n1153\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nVISUALSTYLE\n  2\nAcDbVisualStyle\n  3\nObjectDBX Classes\n 90\n4095\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nMATERIAL\n  2\nAcDbMaterial\n  3\nObjectDBX Classes\n 90\n1153\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nSCALE\n  2\nAcDbScale\n  3\nObjectDBX Classes\n 90\n1153\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nTABLESTYLE\n  2\nAcDbTableStyle\n  3\nObjectDBX Classes\n 90\n4095\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nMLEADERSTYLE\n  2\nAcDbMLeaderStyle\n  3\nACDB_MLEADERSTYLE_CLASS\n 90\n4095\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nDICTIONARYVAR\n  2\nAcDbDictionaryVar\n  3\nObjectDBX Classes\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nCELLSTYLEMAP\n  2\nAcDbCellStyleMap\n  3\nObjectDBX Classes\n 90\n1152\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nMENTALRAYRENDERSETTINGS\n  2\nAcDbMentalRayRenderSettings\n  3\nSCENEOE\n 90\n1024\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nACDBDETAILVIEWSTYLE\n  2\nAcDbDetailViewStyle\n  3\nObjectDBX Classes\n 90\n1025\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nACDBSECTIONVIEWSTYLE\n  2\nAcDbSectionViewStyle\n  3\nObjectDBX Classes\n 90\n1025\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nRASTERVARIABLES\n  2\nAcDbRasterVariables\n  3\nISM\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nLAYOUT\n  2\nAcDbLayout\n  3\nObjectDBX Classes\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nCLASS\n  1\nACDBPLACEHOLDER\n  2\nAcDbPlaceHolder\n  3\nObjectDBX Classes\n 90\n0\n 91\n0\n280\n0\n281\n0\n  0\nENDSEC\n  0\nSECTION\n  2\nTABLES\n  0\nTABLE\n  2\nVPORT\n  5\n8\n330\n0\n100\nAcDbSymbolTable\n 70\n1\n  0\nVPORT\n  5\n23\n330\n8\n100\nAcDbSymbolTableRecord\n100\nAcDbViewportTableRecord\n  2\n*Active\n 70\n0\n 10\n0.0\n 20\n0.0\n 11\n1.0\n 21\n1.0\n 12\n0.0\n 22\n0.0\n 13\n0.0\n 23\n0.0\n 14\n0.5\n 24\n0.5\n 15\n0.5\n 25\n0.5\n 16\n0.0\n 26\n0.0\n 36\n1.0\n 17\n0.0\n 27\n0.0\n 37\n0.0\n 40\n1000.0\n 41\n1.34\n 42\n50.0\n 43\n0.0\n 44\n0.0\n 50\n0.0\n 51\n0.0\n 71\n0\n 72\n1000\n 73\n1\n 74\n3\n 75\n0\n 76\n0\n 77\n0\n 78\n0\n281\n0\n 65\n0\n146\n0.0\n  0\nENDTAB\n  0\nTABLE\n  2\nLTYPE\n  5\n2\n330\n0\n100\nAcDbSymbolTable\n 70\n3\n  0\nLTYPE\n  5\n24\n330\n2\n100\nAcDbSymbolTableRecord\n100\nAcDbLinetypeTableRecord\n  2\nByBlock\n 70\n0\n  3\n\n 72\n65\n 73\n0\n 40\n0.0\n  0\nLTYPE\n  5\n25\n330\n2\n100\nAcDbSymbolTableRecord\n100\nAcDbLinetypeTableRecord\n  2\nByLayer\n 70\n0\n  3\n\n 72\n65\n 73\n0\n 40\n0.0\n  0\nLTYPE\n  5\n26\n330\n2\n100\nAcDbSymbolTableRecord\n100\nAcDbLinetypeTableRecord\n  2\nContinuous\n 70\n0\n  3\n\n 72\n65\n 73\n0\n 40\n0.0\n  0\nENDTAB\n  0\nTABLE\n  2\nLAYER\n  5\n1\n330\n0\n100\nAcDbSymbolTable\n 70\n6\n  0\nLAYER\n  5\n27\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\n0\n 70\n0\n 62\n7\n  6\nContinuous\n370\n-3\n390\n13\n  0\nLAYER\n  5\n28\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\nDefpoints\n 70\n0\n 62\n7\n  6\nContinuous\n290\n0\n370\n-3\n390\n13\n  0\nLAYER\n  5\n2F\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\nDIFF-COLOUR\n 70\n0\n 62\n7\n  6\nContinuous\n370\n-3\n390\n13\n  0\nLAYER\n  5\n30\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\nDIFF-LABELS\n 70\n0\n 62\n8\n  6\nContinuous\n370\n-3\n390\n13\n  0\nLAYER\n  5\n31\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\nDIFF-LEGEND\n 70\n0\n 62\n7\n  6\nContinuous\n370\n-3\n390\n13\n  0\nLAYER\n  5\n32\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\nREGIONS\n 70\n0\n 62\n2\n  6\nContinuous\n370\n-3\n390\n13\n  0\nENDTAB\n  0\nTABLE\n  2\nSTYLE\n  5\n5\n330\n0\n100\nAcDbSymbolTable\n 70\n1\n  0\nSTYLE\n  5\n29\n330\n5\n100\nAcDbSymbolTableRecord\n100\nAcDbTextStyleTableRecord\n  2\nStandard\n 70\n0\n 40\n0.0\n 41\n1.0\n 50\n0.0\n 71\n0\n 42\n2.5\n  3\ntxt\n  4\n\n  0\nENDTAB\n  0\nTABLE\n  2\nVIEW\n  5\n7\n330\n0\n100\nAcDbSymbolTable\n 70\n0\n  0\nENDTAB\n  0\nTABLE\n  2\nUCS\n  5\n6\n330\n0\n100\nAcDbSymbolTable\n 70\n0\n  0\nENDTAB\n  0\nTABLE\n  2\nAPPID\n  5\n3\n330\n0\n100\nAcDbSymbolTable\n 70\n3\n  0\nAPPID\n  5\n2A\n330\n3\n100\nAcDbSymbolTableRecord\n100\nAcDbRegAppTableRecord\n  2\nACAD\n 70\n0\n  0\nAPPID\n  5\n33\n330\n3\n100\nAcDbSymbolTableRecord\n100\nAcDbRegAppTableRecord\n  2\nHATCHBACKGROUNDCOLOR\n 70\n0\n  0\nAPPID\n  5\n34\n330\n3\n100\nAcDbSymbolTableRecord\n100\nAcDbRegAppTableRecord\n  2\nEZDXF\n 70\n0\n  0\nENDTAB\n  0\nTABLE\n  2\nDIMSTYLE\n  5\n4\n330\n0\n100\nAcDbSymbolTable\n 70\n1\n100\nAcDbDimStyleTable\n  0\nDIMSTYLE\n105\n2B\n330\n4\n100\nAcDbSymbolTableRecord\n100\nAcDbDimStyleTableRecord\n  2\nStandard\n 70\n0\n  3\n\n  4\n\n 40\n1.0\n 41\n2.5\n 42\n0.625\n 43\n3.75\n 44\n1.25\n 45\n0.0\n 46\n0.0\n 47\n0.0\n 48\n0.0\n140\n2.5\n141\n2.5\n142\n0.0\n143\n0.03937007874\n144\n1.0\n145\n0.0\n146\n1.0\n147\n0.625\n148\n0.0\n 71\n0\n 72\n0\n 73\n0\n 74\n0\n 75\n0\n 76\n0\n 77\n1\n 78\n8\n 79\n3\n170\n0\n171\n3\n172\n1\n173\n0\n174\n0\n175\n0\n176\n0\n177\n0\n178\n0\n179\n2\n271\n2\n272\n2\n273\n2\n274\n3\n275\n0\n276\n0\n277\n2\n278\n44\n279\n0\n280\n0\n281\n0\n282\n0\n283\n0\n284\n8\n285\n0\n286\n0\n288\n0\n289\n3\n371\n-2\n372\n-2\n  0\nENDTAB\n  0\nTABLE\n  2\nBLOCK_RECORD\n  5\n9\n330\n0\n100\nAcDbSymbolTable\n 70\n2\n  0\nBLOCK_RECORD\n  5\n17\n330\n9\n100\nAcDbSymbolTableRecord\n100\nAcDbBlockTableRecord\n  2\n*Model_Space\n340\n1A\n  0\nBLOCK_RECORD\n  5\n1B\n330\n9\n100\nAcDbSymbolTableRecord\n100\nAcDbBlockTableRecord\n  2\n*Paper_Space\n340\n1E\n  0\nENDTAB\n  0\nENDSEC\n  0\nSECTION\n  2\nBLOCKS\n  0\nBLOCK\n  5\n18\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockBegin\n  2\n*Model_Space\n 70\n0\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  3\n*Model_Space\n  1\n\n  0\nENDBLK\n  5\n19\n330\n17\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockEnd\n  0\nBLOCK\n  5\n1C\n330\n1B\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockBegin\n  2\n*Paper_Space\n 70\n0\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  3\n*Paper_Space\n  1\n\n  0\nENDBLK\n  5\n1D\n330\n1B\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockEnd\n  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES\n";
@@ -1904,7 +1970,7 @@ function exportDiffXML(){
     '<Units>'+(S.units==='ft'
        ? '<Imperial linearUnit="foot" areaUnit="squareFoot" volumeUnit="cubicFeet" temperatureUnit="fahrenheit" pressureUnit="inHG"/>'
        : '<Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter" temperatureUnit="celsius" pressureUnit="milliBars"/>')+'</Units>\n'+
-    '<Application name="Volume Solver" version="3.2"/>\n'+
+    '<Application name="Volume Solver" version="3.3"/>\n'+
     '<Surfaces><Surface name="'+A.name+' to '+B.name+' difference" desc="'+xmlAdjNote(A,B)+'"><Definition surfType="TIN">\n<Pnts>\n';
   P.forEach((p,i)=>{x+='<P id="'+(i+1)+'">'+p[0].toFixed(4)+' '+p[1].toFixed(4)+' '+p[2].toFixed(4)+'</P>\n';});
   x+='</Pnts>\n<Faces>\n';
@@ -1964,13 +2030,23 @@ $('rFile').onchange=e=>{
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
   r.onload=()=>{
-    const polys=readDXF(r.result);
-    if(!polys.length){msg('No closed polylines found in that DXF',true);return;}
-    for(const pts of polys){
-      const reg={name:'Region '+(S.regions.length+1),pts};
+    const {polys,skip}=readDXF(r.result);
+    const why=[];
+    if(skip.open)why.push(skip.open+T(' open'));
+    if(skip.away)why.push(skip.away+T(' off the site'));
+    if(skip.tiny)why.push(skip.tiny+T(' with no area'));
+    if(skip.dup)why.push(skip.dup+T(' duplicate'));
+    if(!polys.length){
+      msg(T('No usable boundary found in that DXF')+
+        (why.length?T(' — skipped ')+why.join(', '):T(' — regions must be closed polylines on the same coordinates as your surfaces')),true);
+      return;
+    }
+    for(const q of polys){
+      const pts=q.pts;
+      const reg={name:q.layer&&q.layer!=='0'?q.layer:'Region '+(S.regions.length+1),pts,depth:0};
       reg.v=regionVolume(pts);S.regions.push(reg);
     }
-    msg(polys.length+' region(s) imported from DXF');
+    msg(polys.length+T(' region(s) imported from DXF')+(why.length?T(' — skipped ')+why.join(', '):''));
     drawRegionList();draw();
   };
   r.readAsText(f);e.target.value='';
