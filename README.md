@@ -12,8 +12,11 @@ nothing is ever uploaded — the whole thing runs on your machine, offline.
 [Launch Volume Solver](https://howtocivilengineer.github.io/Volume-Solver/) (click open link in new tab)
 
 Open the link, drop two LandXML surfaces on the page, and go. No files to hand? Press
-**Load sample** for a built-in 180 × 140 m site with two graded platforms cut into sloping
-ground — the same numbers every time, so it's a safe place to learn the tool.
+**Load sample**: a built-in 260 × 180 m site with two platforms sharing a 2.6 m vertical face,
+a detention basin, ground with a ridge and a gully so there's real cut and real fill, and
+pavement boxes already set on the slab and car park with a section cut through the lot. Same
+numbers every time, so it's a safe place to learn the tool — change a depth and watch the
+volume and the section move together.
 
 Works on desktop and mobile (desktop is recommended).
 
