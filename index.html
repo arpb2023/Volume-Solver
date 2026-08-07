@@ -302,6 +302,7 @@ const $=id=>document.getElementById(id);
 
 /* ───────────────────────── languages ───────────────────────── */
 const TR={
+"Sample site: 260 x 180 m, two platforms sharing a 2.6 m vertical face, a detention basin, and pavement boxes already set on the slab and car park. A section is cut through the lot — change a depth and watch it move.":["Local de exemplo: 260 x 180 m, duas plataformas partilhando uma face vertical de 2,6 m, uma bacia de retenção e caixas de pavimento já definidas na laje e no estacionamento. Um perfil atravessa tudo — altere uma profundidade e veja-o mover-se.","Site d'exemple : 260 x 180 m, deux plateformes partageant une face verticale de 2,6 m, un bassin de rétention et des coffres de chaussée déjà définis sur la dalle et le parking. Un profil traverse le tout — changez une profondeur et regardez-le bouger.","Sitio de ejemplo: 260 x 180 m, dos plataformas que comparten una cara vertical de 2,6 m, una balsa de retención y cajones de pavimento ya definidos en la losa y el aparcamiento. Un perfil atraviesa todo — cambie una profundidad y véalo moverse."],
 "No usable boundary found in that DXF":["Nenhum contorno utilizável encontrado nesse DXF","Aucun contour exploitable trouvé dans ce DXF","No se encontró ningún contorno utilizable en ese DXF"],
 " — skipped ":[" — ignorados "," — ignorés "," — omitidos "],
 " — regions must be closed polylines on the same coordinates as your surfaces":[" — as regiões têm de ser polilinhas fechadas nas mesmas coordenadas das suas superfícies"," — les régions doivent être des polylignes fermées aux mêmes coordonnées que vos surfaces"," — las regiones deben ser polilíneas cerradas en las mismas coordenadas que sus superficies"],
@@ -323,7 +324,6 @@ const TR={
 "Depth below surface":["Profundidade abaixo da superfície","Profondeur sous la surface","Profundidad bajo la superficie"],
 "Partly overridden by a region below":["Parcialmente substituída por uma região abaixo","Partiellement remplacée par une région ci-dessous","Parcialmente sustituida por una región de abajo"],
 "A depth pushes the comparison surface straight down inside the boundary — a slab box, a pavement box, a landscaping strip. Where regions overlap, the one lower in this list wins.":["Uma profundidade empurra a superfície de comparaçãoa direito para baixo dentro do contorno — uma caixa de laje, uma caixa de pavimento, uma faixa paisagística. Onde as regiões se sobrepõem, vence a que está mais abaixo nesta lista.","Une profondeur pousse la surface de comparaison droit vers le bas à l'intérieur du contour — un coffre de dalle, un coffre de chaussée, une bande paysagère. Là où les régions se chevauchent, celle qui est plus bas dans cette liste l'emporte.","Una profundidad empuja la superficie de comparación recta hacia abajo dentro del contorno — un cajón de losa, un cajón de pavimento, una franja de jardinería. Donde las regiones se solapan, gana la que está más abajo en esta lista."],
-"Sample site loaded — two platforms cut into sloping ground. Draw a region over a platform and give it a depth to try a pavement box.":["Local de exemplo carregado — duas plataformas escavadas em terreno inclinado. Desenhe uma região sobre uma plataforma e dê-lhe uma profundidade para testar uma caixa de pavimento.","Site d'exemple chargé — deux plateformes creusées dans un terrain en pente. Tracez une région sur une plateforme et donnez-lui une profondeur pour essayer un coffre de chaussée.","Sitio de ejemplo cargado — dos plataformas excavadas en terreno inclinado. Dibuje una región sobre una plataforma y dele una profundidad para probar un cajón de pavimento."],
 "The two surfaces do not overlap":["As duas superfícies não se sobrepõem","Les deux surfaces ne se chevauchent pas","Las dos superficies no se solapan"],
 "Set by the comparison — the largest difference measured between the two surfaces":["Definido pela comparação — a maior diferença medida entre as duas superfícies","Défini par la comparaison — le plus grand écart mesuré entre les deux surfaces","Definido por la comparación — la mayor diferencia medida entre las dos superficies"],
 "The last band is too narrow to split":["A última faixa é demasiado estreita para dividir","La dernière bande est trop étroite pour être divisée","La última franja es demasiado estrecha para dividirla"],
@@ -1254,32 +1254,54 @@ function sampleXML(){
   let seed=20260801;                        // fixed seed → identical sample every load
   const rnd=()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);
     t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
-  const E0=512340.000, N0=8712500.000, W=180, H=140, step=2.5;
-  const nx=Math.round(W/step)+1, ny=Math.round(H/step)+1;
+  const E0=512340.000, N0=8712500.000, W=260, H=180, step=2.5;
+  /* A regular 2.5 m lattice cannot hold a vertical face — it batters the
+     wall between the platforms over a whole cell. Adding a point either
+     side of each hard edge keeps the lattice topologically regular while
+     letting the surface break where it should. */
+  const lat=(len,brk)=>{
+    const v=[];for(let t=0;t<=len+1e-9;t+=step)v.push(+t.toFixed(3));
+    for(const e of brk){v.push(+(e-0.05).toFixed(3),+(e+0.05).toFixed(3));}
+    return [...new Set(v)].sort((p,q)=>p-q);
+  };
+  const XS=lat(W,[30,118,230]), YS=lat(H,[92,96,154,160]);
+  const nx=XS.length, ny=YS.length;
 
-  const ground=(x,y)=>1204.500-0.018*x+0.011*y+0.55*Math.sin(x/44)+0.35*Math.cos(y/37);
-  const eg=(x,y)=>ground(x,y)+(rnd()-0.5)*0.06;
+  /* Ground with a ridge across it and a gully running east-west, so the
+     job has real cut in one place and real fill in another rather than a
+     uniform shave. */
+  const ground=(x,y)=>1206.0-0.022*x+0.9*Math.sin(x/50)+0.5*Math.cos(y/44)
+                      -1.9*Math.exp(-Math.pow(y-52,2)/1100);
+  const eg=(x,y)=>ground(x,y)+(rnd()-0.5)*0.07;   // survey-scale noise
 
-  // two platforms, each with a 1:3 batter running out to natural ground
-  const pads=[{x0:22,x1:92,y0:26,y1:86,z:1203.20},     // building slab platform
-              {x0:108,x1:162,y0:52,y1:118,z:1205.10}]; // car park platform
+  // the two platforms share an edge, so the step between them is a wall
+  const A={x0:30,x1:118,y0:92,y1:160,z:1205.00};   // building platform
+  const B={x0:118,x1:230,y0:96,y1:154,z:1202.40};  // car park, 2.6 m lower
+  const BAS={cx:72,cy:34,r:23,z:1200.50};          // detention basin
+  const dRect=(p,x,y)=>Math.hypot(Math.max(p.x0-x,0,x-p.x1),Math.max(p.y0-y,0,y-p.y1));
+
   const fg=(x,y)=>{
-    let best=null,bd=1e9;
-    for(const p of pads){
-      const dx=Math.max(p.x0-x,0,x-p.x1), dy=Math.max(p.y0-y,0,y-p.y1);
-      const d=Math.hypot(dx,dy);
-      if(d<bd){bd=d;best=p;}
+    const db=Math.hypot(x-BAS.cx,y-BAS.cy);
+    if(db<=BAS.r)return BAS.z;
+    const da=dRect(A,x,y), dbb=dRect(B,x,y);
+    if(da===0)return A.z;
+    if(dbb===0)return B.z;
+    const g=ground(x,y);
+    /* whichever feature is closest pulls the ground to it; platforms at
+       1 in 3, the basin at 1 in 4 as you would batter a wet area */
+    const cand=[[da,A.z,3],[dbb,B.z,3],[db-BAS.r,BAS.z,4]];
+    let best=g, bestD=1e9;
+    for(const [d,z,sl] of cand){
+      const reach=Math.abs(g-z)*sl;
+      if(d<reach&&d<bestD){bestD=d;best=z+(g-z)*(d/reach);}
     }
-    if(bd===0)return best.z;
-    const g=ground(x,y), reach=Math.abs(g-best.z)*3;       // 1 in 3 batter
-    if(bd>=reach||reach<0.01)return g;
-    return best.z+(g-best.z)*(bd/reach);
+    return best;
   };
 
   const surf=(name,fn)=>{
     const P=[],F=[];
     for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){
-      const x=i*step,y=j*step;
+      const x=XS[i],y=YS[j];
       P.push('<P id="'+(j*nx+i+1)+'">'+(N0+y).toFixed(3)+' '+(E0+x).toFixed(3)+' '+fn(x,y).toFixed(3)+'</P>');
     }
     for(let j=0;j<ny-1;j++)for(let i=0;i<nx-1;i++){
@@ -1290,16 +1312,27 @@ function sampleXML(){
            '</Pnts><Faces>'+F.join('')+'</Faces></Definition></Surface>';
   };
   const body=surf('SAMPLE EG stripped',eg)+surf('SAMPLE FG design',fg);
-  return '<?xml version="1.0"?><LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" version="1.2">'+
+  return {xml:'<?xml version="1.0"?><LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" version="1.2">'+
     '<Units><Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter"/></Units>'+
-    '<Surfaces>'+body+'</Surfaces></LandXML>';
+    '<Surfaces>'+body+'</Surfaces></LandXML>', E0,N0,A,B,BAS};
 }
 function loadSample(){
   S.surfs=[];S.regions=[];S.base=-1;S.comp=-1;S.fitted=false;S.sect=null;S.sectA=null;
-  const got=parseLandXML(sampleXML(),'SAMPLE-SITE.xml');
+  const smp=sampleXML();
+  const got=parseLandXML(smp.xml,'SAMPLE-SITE.xml');
   for(const s of got){s.col=PALETTE[S.surfs.length%PALETTE.length];S.surfs.push(s);}
-  drawRegionList();drawSection();afterLoad();
-  msg('Sample site loaded — two platforms cut into sloping ground. Draw a region over a platform and give it a depth to try a pavement box.');
+  /* Regions with pavement boxes already on them, so one button shows what
+     the tool actually does rather than leaving it to be discovered. */
+  const box=(name,p,depth,inset)=>({name,depth,pts:[
+    {x:smp.E0+p.x0+inset,y:smp.N0+p.y0+inset},{x:smp.E0+p.x1-inset,y:smp.N0+p.y0+inset},
+    {x:smp.E0+p.x1-inset,y:smp.N0+p.y1-inset},{x:smp.E0+p.x0+inset,y:smp.N0+p.y1-inset}]});
+  S.regions=[box('BUILDING SLAB',smp.A,0.45,4), box('CAR PARK',smp.B,0.30,4)];
+  /* a section straight through both platforms, so it crosses the wall
+     between them and the batters either side */
+  S.sect={ax:smp.E0+10, ay:smp.N0+126, bx:smp.E0+250, by:smp.N0+126};
+  afterLoad();
+  recomputeRegions();drawRegionList();sectLabels();drawSection();draw();
+  msg('Sample site: 260 x 180 m, two platforms sharing a 2.6 m vertical face, a detention basin, and pavement boxes already set on the slab and car park. A section is cut through the lot — change a depth and watch it move.');
 }
 
 /* ───────────────────── file loading ───────────────────── */
@@ -1970,7 +2003,7 @@ function exportDiffXML(){
     '<Units>'+(S.units==='ft'
        ? '<Imperial linearUnit="foot" areaUnit="squareFoot" volumeUnit="cubicFeet" temperatureUnit="fahrenheit" pressureUnit="inHG"/>'
        : '<Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter" temperatureUnit="celsius" pressureUnit="milliBars"/>')+'</Units>\n'+
-    '<Application name="Volume Solver" version="3.3"/>\n'+
+    '<Application name="Volume Solver" version="3.4"/>\n'+
     '<Surfaces><Surface name="'+A.name+' to '+B.name+' difference" desc="'+xmlAdjNote(A,B)+'"><Definition surfType="TIN">\n<Pnts>\n';
   P.forEach((p,i)=>{x+='<P id="'+(i+1)+'">'+p[0].toFixed(4)+' '+p[1].toFixed(4)+' '+p[2].toFixed(4)+'</P>\n';});
   x+='</Pnts>\n<Faces>\n';
