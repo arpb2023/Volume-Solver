@@ -24,10 +24,7 @@ Works on desktop and mobile (desktop is recommended).
 
 ## Video walkthrough
 
-A dedicated walkthrough is on the way. In the meantime, the **How To Civil Engineer** channel
-covers the thinking behind these tools and how they're used on real work:
-
-[youtube.com/@howtocivilengineer](https://www.youtube.com/@howtocivilengineer)
+[▶️ Watch TOPO Solver in action on YouTube](https://youtu.be/3GtvRoUluCg)
 
 ---
 
