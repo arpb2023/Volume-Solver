@@ -24,7 +24,7 @@ Works on desktop and mobile (desktop is recommended).
 
 ## Video walkthrough
 
-[▶️ Watch TOPO Solver in action on YouTube](https://youtu.be/3GtvRoUluCg)
+Coming soon
 
 ---
 
