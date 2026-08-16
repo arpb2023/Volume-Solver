@@ -1,14 +1,12 @@
 <!doctype html>
 <html lang="en">
 <head>
-  
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-QEVJSJFP5R"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-QEVJSJFP5R');
 </script>
 <meta charset="utf-8">
@@ -1321,7 +1319,7 @@ function sampleXML(){
     return '<Surface name="'+name+'"><Definition surfType="TIN"><Pnts>'+P.join('')+
            '</Pnts><Faces>'+F.join('')+'</Faces></Definition></Surface>';
   };
-  const body=surf('SAMPLE EG stripped',eg)+surf('SAMPLE FG design',fg);
+  const body=surf('SAMPLE Ground surface',eg)+surf('SAMPLE FG design',fg);
   return {xml:'<?xml version="1.0"?><LandXML xmlns="http://www.landxml.org/schema/LandXML-1.2" version="1.2">'+
     '<Units><Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter"/></Units>'+
     '<Surfaces>'+body+'</Surfaces></LandXML>', E0,N0,A,B,BAS};
@@ -2013,7 +2011,7 @@ function exportDiffXML(){
     '<Units>'+(S.units==='ft'
        ? '<Imperial linearUnit="foot" areaUnit="squareFoot" volumeUnit="cubicFeet" temperatureUnit="fahrenheit" pressureUnit="inHG"/>'
        : '<Metric linearUnit="meter" areaUnit="squareMeter" volumeUnit="cubicMeter" temperatureUnit="celsius" pressureUnit="milliBars"/>')+'</Units>\n'+
-    '<Application name="Volume Solver" version="3.4"/>\n'+
+    '<Application name="Volume Solver" version="3.5"/>\n'+
     '<Surfaces><Surface name="'+A.name+' to '+B.name+' difference" desc="'+xmlAdjNote(A,B)+'"><Definition surfType="TIN">\n<Pnts>\n';
   P.forEach((p,i)=>{x+='<P id="'+(i+1)+'">'+p[0].toFixed(4)+' '+p[1].toFixed(4)+' '+p[2].toFixed(4)+'</P>\n';});
   x+='</Pnts>\n<Faces>\n';
