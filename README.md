@@ -24,39 +24,15 @@ Works on desktop and mobile (desktop is recommended).
 
 ## Video walkthrough
 
-<div style="position:relative; width:100%; max-width:800px; margin:20px auto;">
-  <a href="https://youtu.be/8_uI0onLurI" target="_blank" rel="noopener noreferrer">
-    <img 
+<p align="center">
+  <a href="https://youtu.be/8_uI0onLurI" target="_blank">
+    <img
       src="https://i.ytimg.com/vi/8_uI0onLurI/maxresdefault.jpg"
       alt="Volume Solver – Fast Cut & Fill Earthworks Volumes"
-      style="width:100%; display:block; border-radius:8px;"
-    >
-
-    <div style="
-      position:absolute;
-      top:50%;
-      left:50%;
-      transform:translate(-50%,-50%);
-      width:68px;
-      height:48px;
-      background:#ff0000;
-      border-radius:12px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      box-shadow:0 2px 8px rgba(0,0,0,0.4);
-    ">
-      <div style="
-        width:0;
-        height:0;
-        border-top:10px solid transparent;
-        border-bottom:10px solid transparent;
-        border-left:16px solid white;
-        margin-left:4px;
-      "></div>
-    </div>
+      width="800"
+    />
   </a>
-</div>
+</p>
 
 ---
 
